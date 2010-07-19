@@ -2,11 +2,20 @@ AC_INIT(netcf, 0.1.6)
 AC_CONFIG_SRCDIR([src/netcf.c])
 AC_CONFIG_AUX_DIR([build/aux])
 AM_CONFIG_HEADER([config.h])
+AC_CANONICAL_HOST
 AM_INIT_AUTOMAKE([-Wno-portability 1.11 color-tests parallel-tests])
 AM_SILENT_RULES([yes]) # make --enable-silent-rules the default.
 
 AC_SUBST([LIBNETCF_VERSION_INFO], [4:3:3])
 
+WIN32=no
+case "${host}" in
+	*-mingw*)
+		WIN32=yes
+	;;
+	*)
+	;;
+esac
 AC_GNU_SOURCE
 
 AC_PROG_CC
@@ -16,7 +25,8 @@ AC_PROG_LIBTOOL
 
 dnl The backend driver. Right now hardcoded to initscripts, but
 dnl eventually needs to be configurable at buildtime
-AM_CONDITIONAL([NETCF_DRIVER_INITSCRIPTS], [true])
+dnl temporary, if win32 then dont build this.
+AM_CONDITIONAL(NETCF_DRIVER_INITSCRIPTS, test "x$WIN32" = "xyes")
 
 dnl Compiler flags to be used everywhere
 AC_SUBST([NETCF_CFLAGS], ['--std=gnu99 -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fasynchronous-unwind-tables'])
