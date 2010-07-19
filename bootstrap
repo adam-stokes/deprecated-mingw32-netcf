@@ -62,6 +62,13 @@ c-ctype
 read-file
 safe-alloc
 warnings
+sys_wait
+sigaction
+pthread
+unistd
+getdtablesize
+signal
+arpa_inet
 '
 
 # Tell gnulib to:
@@ -70,7 +77,7 @@ warnings
 #   put *.[ch] files in new gnulib/lib/ dir.
 
 $gnulib_tool			\
-  --lgpl=2			\
+  --lgpl			\
   --with-tests			\
   --m4-base=gnulib/m4		\
   --source-base=gnulib/lib	\

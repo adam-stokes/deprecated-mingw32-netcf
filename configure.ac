@@ -28,10 +28,18 @@ NETCF_COMPILE_WARNINGS
 dnl Need to test if pkg-config exists
 PKG_PROG_PKG_CONFIG
 PKG_CHECK_MODULES([LIBAUGEAS], [augeas >= 0.5.0], [aug_ok=yes], [aug_ok=no])
+if test "x$aug_ok" = "xyes"; then
+	HAVE_LIBAUGEAS=1
+fi
+AC_SUBST([HAVE_LIBAUGEAS])
 PKG_CHECK_MODULES([LIBXML], [libxml-2.0])
 PKG_CHECK_MODULES([LIBXSLT], [libxslt])
 PKG_CHECK_MODULES([LIBEXSLT], [libexslt])
 PKG_CHECK_MODULES([LIBNL], [libnl-1], [nl_ok=yes], [nl_ok=no])
+if test "x$nl_ok" = "xyes"; then
+	HAVE_LIBNL=1
+fi
+AC_SUBST([HAVE_LIBNL])
 
 NETCF_CHECK_READLINE
 

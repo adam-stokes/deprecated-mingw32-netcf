@@ -28,7 +28,14 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <pthread.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include <sys/wait.h>
+
 #include <signal.h>
 #include <errno.h>
 #include "safe-alloc.h"
@@ -334,7 +341,11 @@ exec_program(struct netcf *ncf,
     }
 
     /* close all open file descriptors */
+#ifdef _SC_OPEN_MAX
     int openmax = sysconf (_SC_OPEN_MAX);
+#else
+    int openmax = getdtablesize();
+#endif
     for (i = 3; i < openmax; i++)
         close(i);
 
