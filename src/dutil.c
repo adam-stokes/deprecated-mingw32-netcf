@@ -23,9 +23,7 @@
 #include <config.h>
 #include <internal.h>
 
-#ifdef HAVE_LIBAUGEAS
 #include <augeas.h>
-#endif
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -54,14 +52,12 @@
 #include "netcf.h"
 #include "dutil.h"
 
-#ifdef HAVE_LIBNL
 #include <netlink/socket.h>
 #include <netlink/cache.h>
 #include <netlink/route/addr.h>
 #include <netlink/route/link.h>
 /* For some reason, the headers for libnl vlan functions aren't installed */
 extern int rtnl_link_vlan_get_id(struct rtnl_link *link);
-#endif
 
 #include <dirent.h>
 

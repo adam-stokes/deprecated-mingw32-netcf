@@ -26,7 +26,7 @@ AC_PROG_LIBTOOL
 dnl The backend driver. Right now hardcoded to initscripts, but
 dnl eventually needs to be configurable at buildtime
 dnl temporary, if win32 then dont build this.
-AM_CONDITIONAL(NETCF_DRIVER_INITSCRIPTS, test "x$WIN32" = "xyes")
+AM_CONDITIONAL(NETCF_DRIVER_INITSCRIPTS, test "x$WIN32" != "xyes")
 
 dnl Compiler flags to be used everywhere
 AC_SUBST([NETCF_CFLAGS], ['--std=gnu99 -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fasynchronous-unwind-tables'])

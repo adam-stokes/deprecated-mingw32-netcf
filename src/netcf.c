@@ -106,7 +106,7 @@ int ncf_init(struct netcf **ncf, const char *root) {
         goto oom;
     (*ncf)->data_dir = getenv("NETCF_DATADIR");
     if ((*ncf)->data_dir == NULL)
-        (*ncf)->data_dir = STYLEDIR "/netcf";
+        (*ncf)->data_dir = NETCF_DATADIR "/netcf";
     (*ncf)->debug = getenv("NETCF_DEBUG") != NULL;
     return drv_init(*ncf);
  oom:
