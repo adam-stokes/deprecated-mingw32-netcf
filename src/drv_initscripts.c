@@ -23,7 +23,9 @@
 #include <config.h>
 #include <internal.h>
 
+#ifdef HAVE_LIBAUGEAS
 #include <augeas.h>
+#endif
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -100,7 +102,7 @@ static const struct augeas_xfm_table augeas_xfm_iptables =
 
 static const char *const prog_lokkit = "/usr/sbin/lokkit";
 static const char *const lokkit_custom_rules =
-    "--custom-rules=ipv4:filter:" DATADIR "/netcf/iptables-forward-bridged";
+    "--custom-rules=ipv4:filter:" STYLEDIR "/netcf/iptables-forward-bridged";
 
 static const char *const prog_rc_d_iptables = "/etc/init.d/iptables";
 

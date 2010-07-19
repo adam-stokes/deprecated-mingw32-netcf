@@ -55,6 +55,6 @@ netcf.syms: netcf_public.syms netcf_private.syms
 internal.h: datadir.h
 
 datadir.h: $(top_builddir)/config.status
-	echo '#define DATADIR "$(datadir)"' > datadir.h
+	echo '#define STYLEDIR "$(datadir)"' > datadir.h
 
 DISTCLEANFILES += $(BUILT_SOURCES)
