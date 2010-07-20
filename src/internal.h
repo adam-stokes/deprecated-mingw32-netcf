@@ -216,12 +216,11 @@ int ncf_put_aug(struct netcf *, const char *aug_xml, char **ncf_xml);
  */
 
 #ifdef _WIN32
+
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <winsock2.h>
 #include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
 #include <arpa/inet.h>
 
 inline char* strerror_r(int errnum, char* buf, size_t buflen) {
