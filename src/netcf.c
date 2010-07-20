@@ -42,7 +42,9 @@
 
 #include "internal.h"
 #include "netcf.h"
+#ifndef _WIN32
 #include "dutil.h"
+#endif
 
 /* Clear error code and details */
 #define API_ENTRY(ncf)                          \

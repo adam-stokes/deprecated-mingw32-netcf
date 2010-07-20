@@ -69,7 +69,6 @@ unistd
 getdtablesize
 signal
 arpa_inet
-netinet_in
 sys_ioctl
 '
 

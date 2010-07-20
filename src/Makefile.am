@@ -31,7 +31,7 @@ libnetcf_la_SOURCES = netcf.h netcf.c internal.h \
 libnetcf_la_LDFLAGS = -Wl,--version-script=netcf.syms \
      -version-info $(LIBNETCF_VERSION_INFO)
 libnetcf_la_LIBADD = $(NETCF_LIBDEPS) $(GNULIB)
-libnetcf_la_DEPENDENCIES = $(libnetcf_la_LIBADD) netcf.syms
+#libnetcf_la_DEPENDENCIES = $(libnetcf_la_LIBADD) netcf.syms
 
 ncftool_SOURCES = ncftool.c
 ncftool_LDADD = libnetcf.la $(READLINE_LIBS) $(GNULIB)
