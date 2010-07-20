@@ -40,12 +40,6 @@
 #include <net/if.h>
 #include <netinet/in.h>
 
-#ifdef _WIN32
-#include <winsock2.h>
-#else
-#include <arpa/inet.h>
-#endif
-
 #include "safe-alloc.h"
 #include "ref.h"
 #include "list.h"

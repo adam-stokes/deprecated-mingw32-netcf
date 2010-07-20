@@ -70,6 +70,8 @@ getdtablesize
 signal
 arpa_inet
 sys_ioctl
+getopt-posix
+string
 '
 
 # Tell gnulib to:

@@ -30,10 +30,6 @@
 #include <unistd.h>
 #include <pthread.h>
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
 #include <sys/wait.h>
 
 #include <signal.h>
@@ -42,9 +38,7 @@
 
 #include "internal.h"
 #include "netcf.h"
-#ifndef _WIN32
 #include "dutil.h"
-#endif
 
 /* Clear error code and details */
 #define API_ENTRY(ncf)                          \
