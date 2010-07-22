@@ -3,8 +3,7 @@ GNULIB= ../gnulib/lib/libgnu.la
 GNULIB_CFLAGS= -I $(top_srcdir)/gnulib/lib
 
 AM_CFLAGS = $(NETCF_CFLAGS) $(GNULIB_CFLAGS) $(WARN_CFLAGS) \
-  $(LIBXML_CFLAGS) $(LIBXSLT_CFLAGS) $(LIBAUGEAS_CFLAGS) \
-	-Wmissing-prototypes
+  $(LIBXML_CFLAGS) $(LIBXSLT_CFLAGS) $(LIBAUGEAS_CFLAGS)
 
 include_HEADERS = netcf.h
 
@@ -17,16 +16,18 @@ noinst_PROGRAMS = ncftransform
 EXTRA_DIST = netcf_public.syms \
 	netcf_private.syms
 
-if NETCF_DRIVER_INITSCRIPTS
+if PLATFORM_WIN32
+DRIVER_SOURCES = netcf-win.c
+else
 DRIVER_SOURCES = drv_initscripts.c dutil.h dutil.c \
-     dutil_linux.h dutil_linux.c
+	dutil_linux.h dutil_linux.c netcf.c 
 endif
 
 BUILT_SOURCES = datadir.h netcf.syms
 
 DISTCLEANFILES = datadir.h
 
-libnetcf_la_SOURCES = netcf.h netcf.c internal.h \
+libnetcf_la_SOURCES = netcf.h internal.h \
      ref.h list.h \
      xslt_ext.c $(DRIVER_SOURCES)
 libnetcf_la_LDFLAGS = -Wl,--version-script=netcf.syms \
