@@ -677,7 +677,11 @@ static void parse_opts(int argc, char **argv) {
     while ((opt = getopt_long(argc, argv, "+dhr:", options, &idx)) != -1) {
         switch(opt) {
         case 'd':
+#ifdef WIN32
+            _putenv("NETCF_DEBUG=1");
+#else
             setenv("NETCF_DEBUG", "1", 1);
+#endif
             break;
         case 'h':
             usage();
