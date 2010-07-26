@@ -38,7 +38,11 @@ int main() {
     if ((dwRetVal = GetAdaptersInfo(pAdapterInfo, &ulOutBufLen)) == NO_ERROR) {
         pAdapter = pAdapterInfo;
         while(pAdapter) {
-            printf("IP Address: %s\n", pAdapter->IpAddressList.IpMask.String);
+            printf("IP Address: %s\n", pAdapter->IpAddressList.IpAddress.String);
+            printf("Subnet: %s\n", pAdapter->IpAddressList.IpMask.String);
+            if(pAdapter->DhcpEnabled) {
+                printf("DHCP Enabled: %s\n", pAdapter->IpAddressList.IpMask.String);
+            }
             pAdapter = pAdapter->Next;
             printf("\n");
         }
