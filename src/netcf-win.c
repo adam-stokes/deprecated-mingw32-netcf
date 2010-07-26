@@ -38,7 +38,6 @@
 
 #include "internal.h"
 #include "netcf.h"
-#include "dutil.h"
 
 /* Clear error code and details */
 #define API_ENTRY(ncf)                          \
@@ -84,7 +83,9 @@ void free_netcf_if(struct netcf_if *nif) {
     free(nif);
 }
 
-int ncf_init(struct netcf **ncf, const char *root) {
+int ncf_init(ATTRIBUTE_UNUSED struct netcf **ncf, 
+             ATTRIBUTE_UNUSED const char *root) {
+#ifndef WIN32
     *ncf = NULL;
     if (make_ref(*ncf) < 0)
         goto oom;
@@ -107,6 +108,8 @@ int ncf_init(struct netcf **ncf, const char *root) {
     ncf_close(*ncf);
     *ncf = NULL;
     return -2;
+#endif
+    return 0;
 }
 
 int ncf_close(struct netcf *ncf) {
@@ -117,7 +120,9 @@ int ncf_close(struct netcf *ncf) {
 
     ERR_COND_BAIL(ncf->ref > 1, ncf, EINUSE);
 
+#ifndef WIN32
     drv_close(ncf);
+#endif
     unref(ncf, netcf);
     return 0;
  error:
@@ -130,13 +135,14 @@ int ncf_close(struct netcf *ncf) {
  *
  * Maybe we should just list them as STRUCT NETCF_IF *
  */
-int ncf_num_of_interfaces(struct netcf *ncf, unsigned int flags) {
+int ncf_num_of_interfaces(ATTRIBUTE_UNUSED struct netcf *ncf, ATTRIBUTE_UNUSED unsigned int flags) {
     API_ENTRY(ncf);
     /* return drv_num_of_interfaces(ncf, flags); */
     return 0;
 }
 
-int ncf_list_interfaces(struct netcf *ncf, int maxnames, char **names, unsigned int flags) {
+int ncf_list_interfaces(ATTRIBUTE_UNUSED struct netcf *ncf, ATTRIBUTE_UNUSED int maxnames, 
+                        ATTRIBUTE_UNUSED char **names, ATTRIBUTE_UNUSED unsigned int flags) {
     int result;
 
     API_ENTRY(ncf);
@@ -148,14 +154,15 @@ int ncf_list_interfaces(struct netcf *ncf, int maxnames, char **names, unsigned 
     return result;
 }
 
-struct netcf_if * ncf_lookup_by_name(struct netcf *ncf, const char *name) {
+struct netcf_if * ncf_lookup_by_name(ATTRIBUTE_UNUSED struct netcf *ncf, ATTRIBUTE_UNUSED const char *name) {
     API_ENTRY(ncf);
     /* return drv_lookup_by_name(ncf, name); */
+    return ncf;
 }
 
 int
-ncf_lookup_by_mac_string(struct netcf *ncf, const char *mac,
-                         int maxifaces, struct netcf_if **ifaces) {
+ncf_lookup_by_mac_string(ATTRIBUTE_UNUSED struct netcf *ncf, ATTRIBUTE_UNUSED const char *mac,
+                         ATTRIBUTE_UNUSED int maxifaces, ATTRIBUTE_UNUSED struct netcf_if **ifaces) {
     API_ENTRY(ncf);
     /* return drv_lookup_by_mac_string(ncf, mac, maxifaces, ifaces); */
 }
@@ -166,36 +173,37 @@ ncf_lookup_by_mac_string(struct netcf *ncf, const char *mac,
 
 /* Define a new interface */
 struct netcf_if *
-ncf_define(struct netcf *ncf, const char *xml) {
+ncf_define(ATTRIBUTE_UNUSED struct netcf *ncf, 
+           ATTRIBUTE_UNUSED const char *xml) {
     API_ENTRY(ncf);
     /* return drv_define(ncf, xml); */
 }
 
-const char *ncf_if_name(struct netcf_if *nif) {
+const char *ncf_if_name(ATTRIBUTE_UNUSED struct netcf_if *nif) {
     API_ENTRY(nif->ncf);
     return nif->name;
 }
 
-const char *ncf_if_mac_string(struct netcf_if *nif) {
+const char *ncf_if_mac_string(ATTRIBUTE_UNUSED struct netcf_if *nif) {
     API_ENTRY(nif->ncf);
     /* return drv_mac_string(nif); */
 }
 
 /* Delete the definition */
-int ncf_if_undefine(struct netcf_if *nif) {
+int ncf_if_undefine(ATTRIBUTE_UNUSED struct netcf_if *nif) {
     API_ENTRY(nif->ncf);
     /* return drv_undefine(nif); */
 }
 
 /* Bring the interface up */
-int ncf_if_up(struct netcf_if *nif) {
+int ncf_if_up(ATTRIBUTE_UNUSED struct netcf_if *nif) {
     /* I'm a bit concerned that this assumes nif (and nif->ncf) is non-NULL) */
     API_ENTRY(nif->ncf);
     /* return drv_if_up(nif); */
 }
 
 /* Take it down */
-int ncf_if_down(struct netcf_if *nif) {
+int ncf_if_down(ATTRIBUTE_UNUSED struct netcf_if *nif) {
     /* I'm a bit concerned that this assumes nif (and nif->ncf) is non-NULL) */
     API_ENTRY(nif->ncf);
     /* return drv_if_down(nif); */
@@ -204,7 +212,7 @@ int ncf_if_down(struct netcf_if *nif) {
 /* Produce an XML description for the interface, in the same format that
  * NCF_DEFINE expects
  */
-char *ncf_if_xml_desc(struct netcf_if *nif) {
+char *ncf_if_xml_desc(ATTRIBUTE_UNUSED struct netcf_if *nif) {
     API_ENTRY(nif->ncf);
     /* return drv_xml_desc(nif); */
 }
@@ -214,7 +222,7 @@ char *ncf_if_xml_desc(struct netcf_if *nif) {
  * potentially with extra info not contained in the static config (ie
  * the current IP address of an interface that uses DHCP)
  */
-char *ncf_if_xml_state(struct netcf_if *nif) {
+char *ncf_if_xml_state(ATTRIBUTE_UNUSED struct netcf_if *nif) {
     API_ENTRY(nif->ncf);
     /* return drv_xml_state(nif); */
 }
@@ -222,7 +230,8 @@ char *ncf_if_xml_state(struct netcf_if *nif) {
 /* Report various status info about the interface as bits in
  * "flags". Returns 0 on success, -1 on failure
  */
-int ncf_if_status(struct netcf_if *nif, unsigned int *flags) {
+int ncf_if_status(ATTRIBUTE_UNUSED struct netcf_if *nif, 
+                  ATTRIBUTE_UNUSED unsigned int *flags) {
     API_ENTRY(nif->ncf);
     /* return drv_if_status(nif, flags); */
 }
@@ -252,13 +261,17 @@ int ncf_error(struct netcf *ncf, const char **errmsg, const char **details) {
 /*
  * Test interface
  */
-int ncf_get_aug(struct netcf *ncf, const char *ncf_xml, char **aug_xml) {
+int ncf_get_aug(ATTRIBUTE_UNUSED struct netcf *ncf, 
+                ATTRIBUTE_UNUSED const char *ncf_xml,
+                ATTRIBUTE_UNUSED char **aug_xml) {
     API_ENTRY(ncf);
 
     /* return drv_get_aug(ncf, ncf_xml, aug_xml); */
 }
 
-int ncf_put_aug(struct netcf *ncf, const char *aug_xml, char **ncf_xml) {
+int ncf_put_aug(ATTRIBUTE_UNUSED struct netcf *ncf,
+                ATTRIBUTE_UNUSED const char *aug_xml,
+                ATTRIBUTE_UNUSED char **ncf_xml) {
     API_ENTRY(ncf);
     /* return drv_put_aug(ncf, aug_xml, ncf_xml); */
 }
@@ -268,11 +281,12 @@ int ncf_put_aug(struct netcf *ncf, const char *aug_xml, char **ncf_xml) {
  */
 
 static int
-exec_program(struct netcf *ncf,
-             const char *const*argv,
-             const char *commandline,
-             pid_t *pid)
+exec_program(ATTRIBUTE_UNUSED struct netcf *ncf,
+             ATTRIBUTE_UNUSED const char *const*argv,
+             ATTRIBUTE_UNUSED const char *commandline,
+             ATTRIBUTE_UNUSED pid_t *pid)
 {
+#ifndef WIN32
     sigset_t oldmask, newmask;
     struct sigaction sig_action;
     char errbuf[128];
@@ -352,6 +366,7 @@ exec_program(struct netcf *ncf,
 error:
     /* This is cleanup of parent process only - child
        should never jump here on error */
+#endif
     return -1;
 }
 
@@ -362,8 +377,9 @@ error:
  * return -1
  *
  */
-int run_program(struct netcf *ncf, const char *const *argv) {
-
+int run_program(ATTRIBUTE_UNUSED struct netcf *ncf, 
+                ATTRIBUTE_UNUSED const char *const *argv) {
+#ifndef WIN32
     pid_t childpid;
     int exitstatus, waitret;
     char *argv_str;
@@ -398,6 +414,8 @@ int run_program(struct netcf *ncf, const char *const *argv) {
 error:
     FREE(argv_str);
     return ret;
+#endif
+    return 0;
 }
 
 /*
@@ -448,8 +466,12 @@ void vreport_error(struct netcf *ncf, netcf_errcode_t errcode,
 
     ncf->errcode = errcode;
     if (format != NULL) {
+#ifndef WIN32
         if (vasprintf(&(ncf->errdetails), format, ap) < 0)
             ncf->errdetails = NULL;
+#else
+        ncf->errdetails = NULL;
+#endif
     }
 }
 
