@@ -1,4 +1,4 @@
-/* NetworkDevice.c - IP Helper functions under mingw32 
+/* NetworkDevice.c - IP Helper functions under mingw32
  * Copyright (C) 2010 Adam Stokes
  *
  * This library is free software; you can redistribute it and/or
@@ -22,6 +22,18 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+void displayAdapters(PIP_ADAPTER_INFO pAdapter) {
+  while(pAdapter) {
+    printf("IP Address: %s\n", pAdapter->IpAddressList.IpAddress.String);
+    printf("Subnet: %s\n", pAdapter->IpAddressList.IpMask.String);
+    if(pAdapter->DhcpEnabled) {
+        printf("DHCP Enabled: %s\n", pAdapter->IpAddressList.IpMask.String);
+    }
+    pAdapter = pAdapter->Next;
+    printf("\n");
+  }
+}
+
 int main() {
     PIP_ADAPTER_INFO pAdapterInfo;
     PIP_ADAPTER_INFO pAdapter = NULL;
@@ -29,28 +41,39 @@ int main() {
     UINT i;
 
     ULONG ulOutBufLen = sizeof (IP_ADAPTER_INFO);
-    pAdapterInfo = (IP_ADAPTER_INFO *) malloc(sizeof (IP_ADAPTER_INFO));
+    printf("ulOutBufLen == %u\n", ulOutBufLen);
+    pAdapterInfo = (IP_ADAPTER_INFO *) malloc(ulOutBufLen);
     if (pAdapterInfo == NULL) {
         printf("error allocating memory for getadaptersinfo\n");
         return 1;
     }
 
     if ((dwRetVal = GetAdaptersInfo(pAdapterInfo, &ulOutBufLen)) == NO_ERROR) {
-        pAdapter = pAdapterInfo;
-        while(pAdapter) {
-            printf("IP Address: %s\n", pAdapter->IpAddressList.IpAddress.String);
-            printf("Subnet: %s\n", pAdapter->IpAddressList.IpMask.String);
-            if(pAdapter->DhcpEnabled) {
-                printf("DHCP Enabled: %s\n", pAdapter->IpAddressList.IpMask.String);
-            }
-            pAdapter = pAdapter->Next;
-            printf("\n");
+        printf("First call successful!\n");
+        displayAdapters(pAdapterInfo);
+    } else if(dwRetVal == ERROR_BUFFER_OVERFLOW) {
+        printf("Adjusting buffer size to %u.\n", ulOutBufLen);
+        free(pAdapterInfo);
+        pAdapterInfo = (IP_ADAPTER_INFO*)malloc(ulOutBufLen);
+
+        if((dwRetVal = GetAdaptersInfo(pAdapterInfo, &ulOutBufLen)) == NO_ERROR) {
+            displayAdapters(pAdapterInfo);
         }
-    } else {
-        printf("GetAdaptersInfo failed with : %d\n", dwRetVal);
+    }
+
+    if(dwRetVal != NO_ERROR) {
+        switch(dwRetVal) {
+        case ERROR_BUFFER_OVERFLOW:   printf("Buffer overflow!\n"); break;
+        case ERROR_INVALID_DATA:      printf("Invalid data!\n"); break;
+        case ERROR_INVALID_PARAMETER: printf("Invalid parameter!\n"); break;
+        case ERROR_NO_DATA:           printf("No data!\n"); break;
+        case ERROR_NOT_SUPPORTED:     printf("API not supported!\n"); break;
+        default:                      printf("Error: %d\n", dwRetVal); break;
+      }
     }
 
     if (pAdapterInfo)
         free(pAdapterInfo);
+
     return 0;
 }
