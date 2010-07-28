@@ -1,4 +1,4 @@
-AC_INIT([netcf], [0.1.6])
+AC_INIT([netcf], [0.1.7])
 AC_CONFIG_SRCDIR([src/netcf.c])
 AC_CONFIG_AUX_DIR([build/aux])
 AC_CONFIG_HEADER([config.h])
@@ -68,4 +68,4 @@ AC_OUTPUT(Makefile                                          \
           src/Makefile                                      \
           tests/Makefile                                    \
           doc/Makefile                                      \
-          netcf.pc netcf.spec)
+          netcf.pc netcf.spec mingw32-netcf.spec)
