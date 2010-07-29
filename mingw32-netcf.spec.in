@@ -60,7 +60,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_mingw32_bindir}/ncftool.exe
 %{_mingw32_libdir}/libnetcf.la
 %{_mingw32_includedir}/netcf.h
-%{_mingw32_libdir}/libnetcf.la
 %{_mingw32_libdir}/pkgconfig/netcf.pc
 
 %files static
