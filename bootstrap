@@ -72,6 +72,10 @@ arpa_inet
 sys_ioctl
 getopt-posix
 string
+sys_socket
+netinet_in
+inet_ntop
+inet_pton
 '
 
 # Tell gnulib to:

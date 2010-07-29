@@ -31,7 +31,7 @@ libnetcf_la_SOURCES = netcf.h internal.h \
      ref.h list.h \
      xslt_ext.c $(DRIVER_SOURCES)
 libnetcf_la_LDFLAGS = -Wl,--version-script=netcf.syms \
-     -version-info $(LIBNETCF_VERSION_INFO) -no-undefined
+     -version-info $(LIBNETCF_VERSION_INFO) @MINGW_EXTRA_LDFLAGS@
 libnetcf_la_LIBADD = $(NETCF_LIBDEPS) $(GNULIB)
 #libnetcf_la_DEPENDENCIES = $(libnetcf_la_LIBADD) netcf.syms
 

@@ -25,6 +25,7 @@ PLATFORM_WIN32="no"
 case "$host" in
 	*-*-mingw*)
 		PLATFORM_WIN32="yes"
+		MINGW_EXTRA_LDFLAGS="-no-undefined"
 	;;
 	*)
 	;;
@@ -32,6 +33,7 @@ esac
 AC_MSG_RESULT([$PLATFORM_WIN32])
 AM_CONDITIONAL(PLATFORM_WIN32, test "${PLATFORM_WIN32}" = "yes")
 AC_SUBST([PLATFORM_WIN32])
+AC_SUBST(MINGW_EXTRA_LDFLAGS)
 
 dnl Compiler flags to be used everywhere
 AC_SUBST([NETCF_CFLAGS], ['--std=gnu99 -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fasynchronous-unwind-tables'])
