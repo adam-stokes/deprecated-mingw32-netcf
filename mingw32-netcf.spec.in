@@ -3,7 +3,6 @@
 %global _use_internal_dependency_generator 0
 %global __find_requires %{_mingw32_findrequires}
 %global __find_provides %{_mingw32_findprovides}
-%define __debug_install_post %{_mingw32_debug_install_post}
 
 Name:           mingw32-netcf
 Version:        @VERSION@
@@ -22,7 +21,6 @@ BuildRequires:  mingw32-libxml2
 BuildRequires:  mingw32-libxslt
 BuildRequires:  mingw32-gcc
 BuildRequires:  mingw32-gettext
-#Requires:       %{name}-libs = %{version}-%{release}
 Requires:       pkgconfig
 
 %description
@@ -41,14 +39,12 @@ Requires:       %{name} = %{version}-%{release}
 %description    static
 Static version of MinGW Windows netcf library.
 
-%{_mingw32_debug_package}
-
 %prep
 %setup -q
 
 %build
 PATH=%{_mingw32_bindir}:$PATH \
-%{_mingw32_configure} --enable-static --enable-shared
+%{_mingw32_configure} --disable-static
 make %{?_smp_mflags}
 
 %install
@@ -62,12 +58,12 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 %{_mingw32_bindir}/ncftool.exe
-%{_mingw32_datadir}/netcf
 %{_mingw32_libdir}/libnetcf.la
-%{_mingw32_includedir}/*
+%{_mingw32_includedir}/netcf.h
+%{_mingw32_libdir}/libnetcf.la
 %{_mingw32_libdir}/pkgconfig/netcf.pc
 
-%files
+%files static
 %defattr(-,root,root,-)
 %{_mingw32_libdir}/libnetcf.a
 
