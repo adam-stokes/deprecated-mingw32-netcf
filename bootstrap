@@ -76,6 +76,7 @@ sys_socket
 netinet_in
 inet_ntop
 inet_pton
+vasprintf
 '
 
 # Tell gnulib to:
