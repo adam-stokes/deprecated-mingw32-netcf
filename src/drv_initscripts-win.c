@@ -54,26 +54,46 @@ static int cmpstrp(const void *p1, const void *p2) {
     return strcmp(s1, s2);
 }
 
-static int list_interfaces() {
-    int nint = 0;
+static int list_interface_ids(ATTRIBUTE_UNUSED struct netcf *ncf,
+			      ATTRIBUTE_UNUSED int maxnames,
+			      char **names,
+			      unsigned int flags) {
 
-    if ((nint = GetNumberOfInterfaces()) != NO_ERROR) {
-        return nint;
-    } else {
-        return -1;
+    PIP_INTERFACE_INFO intf;
+    ULONG buf;
+    DWORD result;
+    int nint = 0, i, num_intf;
+
+    if ( (result = GetInterfaceInfo(NULL, &buf)) == ERROR_INSUFFICIENT_BUFFER) {
+	// reallocate memory based on new buf length
+	intf = (IP_INTERFACE_INFO *) malloc(buf);
+	if (intf == NULL) {
+	    // no memory
+	    return 1;
+	}
     }
+
+    result = GetInterfaceInfo(intf, &buf);
+    num_intf = intf->NumAdapters;
+    if (num_intf < 0) {
+	// no interfaces?
+	return num_intf;
+    }
+    if (names) {
+	for (i = 0; i < (int) intf->NumAdapters; i++) {
+	    names[i] = strdup(intf->Adapter[i].Name);
+	}
+    }
+    return intf->NumAdapters;
+}
+static int drv_list_interfaces(ATTRIBUTE_UNUSED struct netcf *ncf,
+			       ATTRIBUTE_UNUSED int maxnames,
+			       char **names,
+			       unsigned int flags) {
+    return list_interface_ids(ncf, maxnames, names, flags);
 }
 
-static int drv_list_interfaces(struct netcf *ncf, int maxnames,
-			       char **names, unsigned int flags) {
-    return list_interfaces();
-}
-
-static int drv_num_of_interfaces(struct netcf *ncf, unsigned int flags) {
-    return list_interfaces();
-}
-
-struct netcf_if *drv_lookup_by_name(struct netcf *ncf, const char *name) {
-
-
+static int drv_num_of_interfaces(ATTRIBUTE_UNUSED struct netcf *ncf,
+				 unsigned int flags) {
+    return list_interface_ids(ncf, 0, NULL, flags);
 }
