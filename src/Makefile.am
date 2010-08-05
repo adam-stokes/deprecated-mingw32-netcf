@@ -17,7 +17,7 @@ EXTRA_DIST = netcf_public.syms \
 	netcf_private.syms
 
 if PLATFORM_WIN32
-DRIVER_SOURCES = netcf-win.c
+DRIVER_SOURCES = drv_initscripts-win.c
 else
 DRIVER_SOURCES = drv_initscripts.c dutil.h dutil.c \
 	dutil_linux.h dutil_linux.c netcf.c 
