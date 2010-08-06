@@ -1,5 +1,5 @@
 /*
- * drv_initscripts.c: the initscripts backend for netcf
+ * drv_initscripts-win.c: the initscripts backend for mingw-netcf
  *
  * Copyright (C) 2009 Red Hat Inc.
  *
@@ -18,6 +18,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  *
  * Author: David Lutterkort <lutter@redhat.com>
+ * Author: Adam Stokes <ajs@redhat.com>
  */
 
 #include <config.h>
@@ -55,9 +56,10 @@ static int cmpstrp(const void *p1, const void *p2) {
 }
 
 static int list_interface_ids(ATTRIBUTE_UNUSED struct netcf *ncf,
-			      ATTRIBUTE_UNUSED int maxnames,
+			      int maxnames,
 			      char **names,
-			      unsigned int flags) {
+			      unsigned int flags,
+			      const char *id_attr) {
 
     PIP_INTERFACE_INFO intf;
     ULONG buf;
@@ -79,12 +81,16 @@ static int list_interface_ids(ATTRIBUTE_UNUSED struct netcf *ncf,
 	// no interfaces?
 	return num_intf;
     }
-    if (names) {
-	for (i = 0; i < (int) intf->NumAdapters; i++) {
-	    names[i] = strdup(intf->Adapter[i].Name);
-	}
+    if (!names) {
+	maxnames = num_intf;
     }
-    return intf->NumAdapters;
+    for (i = 0; (i < num_intf) && (nint < maxnames); i++) {
+	if(names) {
+	    names[nint] = strdup(intf->Adapter[nint].Name);
+	}
+	nint++;
+    }
+    return num_intf;
 }
 static int drv_list_interfaces(ATTRIBUTE_UNUSED struct netcf *ncf,
 			       ATTRIBUTE_UNUSED int maxnames,
