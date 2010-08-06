@@ -107,7 +107,13 @@ static int drv_num_of_interfaces(ATTRIBUTE_UNUSED struct netcf *ncf,
     return list_interface_ids(ncf, 0, NULL, flags);
 }
 
-int drv_if_down(struct netcf_if *nif) {
+static int stop_dep_svcs() {
+    // TODO: add code to stop dependent services
+    int result = -1;
+    return result;
+}
+
+static int drv_if_down(struct netcf_if *nif) {
     SERVICE_STATUS_PROCESS ssp;
 
     /* SCM Handle */
@@ -142,8 +148,8 @@ int drv_if_down(struct netcf_if *nif) {
 	// TODO: if timeout exceeds break
     }
 
-    /* Depedent services need to be stopped */
-    StopDependentServices();
+    /* Dependent services need to be stopped */
+    stop_dep_svcs();
     
     /* Send stop code to service */
     if(!ControlService(svc_control,
