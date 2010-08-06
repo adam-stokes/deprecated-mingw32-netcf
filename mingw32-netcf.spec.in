@@ -21,6 +21,7 @@ BuildRequires:  mingw32-libxml2
 BuildRequires:  mingw32-libxslt
 BuildRequires:  mingw32-gcc
 BuildRequires:  mingw32-gettext
+BuildRequires: 	mingw32-w32api
 Requires:       pkgconfig
 
 %description

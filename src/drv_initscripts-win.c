@@ -49,6 +49,9 @@
 #include <ws2ipdef.h>
 #include <iphlpapi.h>
 
+SC_HANDLE svc_manager;
+SC_HANDLE svc_control;
+
 static int cmpstrp(const void *p1, const void *p2) {
     const char *s1 = * (const char **)p1;
     const char *s2 = * (const char **)p2;
@@ -93,7 +96,7 @@ static int list_interface_ids(ATTRIBUTE_UNUSED struct netcf *ncf,
     return num_intf;
 }
 static int drv_list_interfaces(ATTRIBUTE_UNUSED struct netcf *ncf,
-			       ATTRIBUTE_UNUSED int maxnames,
+			       int maxnames,
 			       char **names,
 			       unsigned int flags) {
     return list_interface_ids(ncf, maxnames, names, flags);
@@ -102,4 +105,64 @@ static int drv_list_interfaces(ATTRIBUTE_UNUSED struct netcf *ncf,
 static int drv_num_of_interfaces(ATTRIBUTE_UNUSED struct netcf *ncf,
 				 unsigned int flags) {
     return list_interface_ids(ncf, 0, NULL, flags);
+}
+
+int drv_if_down(struct netcf_if *nif) {
+    SERVICE_STATUS_PROCESS ssp;
+
+    /* SCM Handle */
+    svc_manager = OpenSCManager(
+				NULL,
+				NULL,
+				SC_MANAGER_ALL_ACCESS);
+    if (svc_manager == NULL)
+	return result;
+
+    /* Service Handle */
+    svc_control = OpenService(
+			      svc_manager,
+			      nif->name,
+			      SERVICE_STOP |
+			      SERVICE_QUERY_STATUS |
+			      SERVICE_ENUMERATE_DEPENDENTS);
+
+    if (svc_control == NULL)
+	goto svc_cleanup;
+
+    /* Test if service already stopped. */
+    if (ssp.dwCurrentState == SERVICE_STOPPED)
+	goto svc_cleanup;
+
+    /* Wait for a pending stop */
+    while (ssp.dwCurrentState == SERVICE_STOP_PENDING) {
+	// TODO: sleep timer
+	if (ssp.dwCurrentState == SERVICE_STOPPED)
+	    result = 0;
+	    goto svc_cleanup;
+	// TODO: if timeout exceeds break
+    }
+
+    /* Depedent services need to be stopped */
+    StopDependentServices();
+    
+    /* Send stop code to service */
+    if(!ControlService(svc_control,
+		       SERVICE_CONTROL_STOP,
+		       (LPSERVICE_STATUS) &ssp))
+	goto svc_cleanup;
+
+    while(ssp.dwCurrentState != SERVICE_STOPPED) {
+	// TODO: sleep timer needed
+	if(ssp.dwCurrentState == SERVICE_STOPPED) {
+	    result = 0;
+	    break;
+	}
+	// TODO: cleanup if timer exceeds limit
+    }
+    return result;
+
+ svc_cleanup:
+    CloseServiceHandle(svc_control);
+    CloseServiceHandle(svc_manager);
+    return result;
 }
