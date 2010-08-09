@@ -107,9 +107,24 @@ int drv_num_of_interfaces(ATTRIBUTE_UNUSED struct netcf *ncf,
     return list_interface_ids(ncf, 0, NULL, flags);
 }
 
-int stop_dep_svcs(void) {
+static int stop_dep_svcs(SC_HANDLE svc_manager, SC_HANDLE svc_control) {
     // TODO: add code to stop dependent services
     int result = -1;
+    DWORD i, needed, count;
+    ENUM_SERVICE_STATUS ess;
+    SC_HANDLE depserv;
+    SERVICE_STATUS_PROCESS ssp;
+
+    if (EnumDependentServices(svc_control, SERVICE_ACTIVE, NULL,
+			      0, &needed, &count)) {
+	// enum call succeeds return
+	result = 0;
+	return result;
+    }
+    
+    if (GetLastError() != ERROR_MORE_DATA)
+	return result;
+
     return result;
 }
 
@@ -176,6 +191,7 @@ int drv_if_down(struct netcf_if *nif) {
 
 int drv_if_up(struct netcf_if *nif) {
     SERVICE_STATUS_PROCESS ssp;
+    DWORD needed;
     int result = -1;
     
     svc_manager = OpenSCManager(
@@ -193,6 +209,12 @@ int drv_if_up(struct netcf_if *nif) {
     if (!svc_control) {
 	CloseServiceHandle(svc_manager);
 	return result;
+    }
+
+    if(!QueryServiceStatusEx(svc_control, SC_STATUS_PROCESS_INFO, 
+			     (LPBYTE) &ssp, sizeof(SERVICE_STATUS_PROCESS),
+			     &needed)) {
+	goto svc_cleanup;
     }
 
     // Test status of service
