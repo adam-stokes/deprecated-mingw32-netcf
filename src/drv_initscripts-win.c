@@ -46,17 +46,17 @@
 #include <libexslt/exslt.h>
 
 #include <winsock2.h>
-#include <ws2ipdef.h>
 #include <iphlpapi.h>
 
-SC_HANDLE svc_manager;
-SC_HANDLE svc_control;
+SC_HANDLE svc_manager, svc_control;
 
 static int cmpstrp(const void *p1, const void *p2) {
     const char *s1 = * (const char **)p1;
     const char *s2 = * (const char **)p2;
     return strcmp(s1, s2);
 }
+
+
 
 static int list_interface_ids(ATTRIBUTE_UNUSED struct netcf *ncf,
 			      int maxnames,
@@ -107,7 +107,7 @@ int drv_num_of_interfaces(ATTRIBUTE_UNUSED struct netcf *ncf,
     return list_interface_ids(ncf, 0, NULL, flags);
 }
 
-int stop_dep_svcs() {
+int stop_dep_svcs(void) {
     // TODO: add code to stop dependent services
     int result = -1;
     return result;
@@ -116,12 +116,11 @@ int stop_dep_svcs() {
 int drv_if_down(struct netcf_if *nif) {
     SERVICE_STATUS_PROCESS ssp;
 
-    /* SCM Handle */
     svc_manager = OpenSCManager(
 				NULL,
 				NULL,
 				SC_MANAGER_ALL_ACCESS);
-    if (svc_manager == NULL)
+    if (!svc_manager)
 	return result;
 
     /* Service Handle */
@@ -132,8 +131,10 @@ int drv_if_down(struct netcf_if *nif) {
 			      SERVICE_QUERY_STATUS |
 			      SERVICE_ENUMERATE_DEPENDENTS);
 
-    if (svc_control == NULL)
-	goto svc_cleanup;
+    if (!svc_control) {
+	CloseServiceHandle(svc_manager);
+	return result;
+    }
 
     /* Test if service already stopped. */
     if (ssp.dwCurrentState == SERVICE_STOPPED)
@@ -181,7 +182,7 @@ int drv_if_up(struct netcf_if *nif) {
 	NULL,
 	NULL,
 	SC_MANAGER_ALL_ACCESS);
-    if (svc_manager == NULL)
+    if (!svc_manager)
 	return result;
 
     svc_control = OpenService(
@@ -189,7 +190,7 @@ int drv_if_up(struct netcf_if *nif) {
 	nif->name,             // Name of service
 	SERVICE_ALL_ACCESS);
 
-    if (svc_control == NULL) {
+    if (!svc_control) {
 	CloseServiceHandle(svc_manager);
 	return result;
     }
@@ -198,7 +199,7 @@ int drv_if_up(struct netcf_if *nif) {
     if (ssp.dwCurrentState != SERVICE_STOPPED && ssp.dwCurrentState != SERVICE_STOP_PENDING) {
 	CloseServiceHandle(svc_control);
 	CloseServiceHandle(svc_manager);
-	return result;
+	goto svc_cleanup;
     }
 
     // TODO: implement timeout
@@ -209,12 +210,25 @@ int drv_if_up(struct netcf_if *nif) {
     if (!StartService(svc_control, 0, NULL)) {
 	CloseServiceHandle(svc_control);
 	CloseServiceHandle(svc_manager);
-	return result;
+	goto svc_cleanup;
     } else {
 	result = 0;
-	return result;
+	goto svc_cleanup;
     }
 
-    // TODO: start service pending
-	
+    while (ssp.dwCurrentState == SERVICE_START_PENDING) {
+	// setup timeout
+    }
+
+    if (ssp.dwCurrentState == SERVICE_RUNNING) {
+	result = 0;
+	goto svc_cleanup;
+    } else {
+	goto svc_cleanup;
+    }
+
+ svc_cleanup:
+    CloseServiceHandle(svc_control);
+    CloseServiceHandle(svc_manager);
+    return result;
 }
