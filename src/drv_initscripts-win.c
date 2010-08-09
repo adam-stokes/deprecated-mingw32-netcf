@@ -254,3 +254,17 @@ int drv_if_up(struct netcf_if *nif) {
     CloseServiceHandle(svc_manager);
     return result;
 }
+
+const char *drv_mac_string(struct netcf_if *nif) {
+    const char *mac;
+    
+    if (mac != NULL) {
+	if (nif->mac == NULL || STRNEQ(nif->mac, mac)) {
+	    FREE(nif->mac);
+	    nif->mac = strdup(mac);
+	} else {
+	    FREE(nif->mac);
+	}
+    }
+    return nif->mac;
+}
