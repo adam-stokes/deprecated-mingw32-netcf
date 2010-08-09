@@ -95,25 +95,25 @@ static int list_interface_ids(ATTRIBUTE_UNUSED struct netcf *ncf,
     }
     return num_intf;
 }
-static int drv_list_interfaces(ATTRIBUTE_UNUSED struct netcf *ncf,
+int drv_list_interfaces(ATTRIBUTE_UNUSED struct netcf *ncf,
 			       int maxnames,
 			       char **names,
 			       unsigned int flags) {
     return list_interface_ids(ncf, maxnames, names, flags);
 }
 
-static int drv_num_of_interfaces(ATTRIBUTE_UNUSED struct netcf *ncf,
+int drv_num_of_interfaces(ATTRIBUTE_UNUSED struct netcf *ncf,
 				 unsigned int flags) {
     return list_interface_ids(ncf, 0, NULL, flags);
 }
 
-static int stop_dep_svcs() {
+int stop_dep_svcs() {
     // TODO: add code to stop dependent services
     int result = -1;
     return result;
 }
 
-static int drv_if_down(struct netcf_if *nif) {
+int drv_if_down(struct netcf_if *nif) {
     SERVICE_STATUS_PROCESS ssp;
 
     /* SCM Handle */
@@ -171,4 +171,50 @@ static int drv_if_down(struct netcf_if *nif) {
     CloseServiceHandle(svc_control);
     CloseServiceHandle(svc_manager);
     return result;
+}
+
+int drv_if_up(struct netcf_if *nif) {
+    SERVICE_STATUS_PROCESS ssp;
+    int result = -1;
+    
+    svc_manager = OpenSCManager(
+	NULL,
+	NULL,
+	SC_MANAGER_ALL_ACCESS);
+    if (svc_manager == NULL)
+	return result;
+
+    svc_control = OpenService(
+	svc_manager,
+	nif->name,             // Name of service
+	SERVICE_ALL_ACCESS);
+
+    if (svc_control == NULL) {
+	CloseServiceHandle(svc_manager);
+	return result;
+    }
+
+    // Test status of service
+    if (ssp.dwCurrentState != SERVICE_STOPPED && ssp.dwCurrentState != SERVICE_STOP_PENDING) {
+	CloseServiceHandle(svc_control);
+	CloseServiceHandle(svc_manager);
+	return result;
+    }
+
+    // TODO: implement timeout
+    while (ssp.dwCurrentState == SERVICE_STOP_PENDING) {
+	// timeout code here
+    }
+
+    if (!StartService(svc_control, 0, NULL)) {
+	CloseServiceHandle(svc_control);
+	CloseServiceHandle(svc_manager);
+	return result;
+    } else {
+	result = 0;
+	return result;
+    }
+
+    // TODO: start service pending
+	
 }
