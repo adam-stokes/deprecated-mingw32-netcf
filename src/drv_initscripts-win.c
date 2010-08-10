@@ -56,13 +56,11 @@ static int cmpstrp(const void *p1, const void *p2) {
     return strcmp(s1, s2);
 }
 
-
-
-static int list_interface_ids(ATTRIBUTE_UNUSED struct netcf *ncf,
+static int list_interface_ids(struct netcf *ncf,
 			      int maxnames,
 			      char **names,
 			      unsigned int flags,
-			      const char *id_attr) {
+			      ATTRIBUTE_UNUSED const char *id_attr) {
 
     PIP_INTERFACE_INFO intf;
     ULONG buf;
@@ -72,18 +70,13 @@ static int list_interface_ids(ATTRIBUTE_UNUSED struct netcf *ncf,
     if ( (result = GetInterfaceInfo(NULL, &buf)) == ERROR_INSUFFICIENT_BUFFER) {
 	// reallocate memory based on new buf length
 	intf = (IP_INTERFACE_INFO *) malloc(buf);
-	if (intf == NULL) {
-	    // no memory
-	    return 1;
-	}
+	ERR_NOMEM(intf == NULL, ncf);
     }
 
-    result = GetInterfaceInfo(intf, &buf);
+    ERR_COND_BAIL(GetInterfaceInfo(intf, &buf) == ERROR_NO_DATA, ncf, EOTHER);
     num_intf = intf->NumAdapters;
-    if (num_intf < 0) {
-	// no interfaces?
-	return num_intf;
-    }
+    ERR_COND_BAIL(num_intf < 0, ncf, EOTHER);
+
     if (!names) {
 	maxnames = num_intf;
     }
@@ -94,11 +87,14 @@ static int list_interface_ids(ATTRIBUTE_UNUSED struct netcf *ncf,
 	nint++;
     }
     return num_intf;
+error:
+    return -1;
 }
-int drv_list_interfaces(ATTRIBUTE_UNUSED struct netcf *ncf,
-			       int maxnames,
-			       char **names,
-			       unsigned int flags) {
+
+int drv_list_interfaces(struct netcf *ncf,
+			int maxnames,
+			char **names,
+			unsigned int flags) {
     return list_interface_ids(ncf, maxnames, names, flags);
 }
 
@@ -152,15 +148,14 @@ int drv_if_down(struct netcf_if *nif) {
     }
 
     /* Test if service already stopped. */
-    if (ssp.dwCurrentState == SERVICE_STOPPED)
-	goto svc_cleanup;
+    ERR_COND_BAIL(ssp.dwCurrentState == SERVICE_STOPPED, ncf, EOTHER);
 
     /* Wait for a pending stop */
     while (ssp.dwCurrentState == SERVICE_STOP_PENDING) {
 	// TODO: sleep timer
-	if (ssp.dwCurrentState == SERVICE_STOPPED)
-	    result = 0;
-	    goto svc_cleanup;
+	result = 0;
+	ERR_COND_BAIL(ssp.dwCurrentState == SERVICE_STOPPED, ncf, EOTHER);
+
 	// TODO: if timeout exceeds break
     }
 
@@ -168,11 +163,10 @@ int drv_if_down(struct netcf_if *nif) {
     stop_dep_svcs();
     
     /* Send stop code to service */
-    if(!ControlService(svc_control,
-		       SERVICE_CONTROL_STOP,
-		       (LPSERVICE_STATUS) &ssp))
-	goto svc_cleanup;
-
+    ERR_COND_BAIL(!ControlService(svc_control,
+				  SERVICE_CONTROL_STOP,
+				  (LPSERVICE_STATUS) &ssp), ncf, EOTHER);
+    
     while(ssp.dwCurrentState != SERVICE_STOPPED) {
 	// TODO: sleep timer needed
 	if(ssp.dwCurrentState == SERVICE_STOPPED) {
@@ -183,7 +177,7 @@ int drv_if_down(struct netcf_if *nif) {
     }
     return result;
 
- svc_cleanup:
+error:
     CloseServiceHandle(svc_control);
     CloseServiceHandle(svc_manager);
     return result;
@@ -198,8 +192,7 @@ int drv_if_up(struct netcf_if *nif) {
 	NULL,
 	NULL,
 	SC_MANAGER_ALL_ACCESS);
-    if (!svc_manager)
-	return result;
+    ERR_COND_BAIL(!svc_manager, ncf, EOTHER);
 
     svc_control = OpenService(
 	svc_manager,
@@ -211,31 +204,24 @@ int drv_if_up(struct netcf_if *nif) {
 	return result;
     }
 
-    if(!QueryServiceStatusEx(svc_control, SC_STATUS_PROCESS_INFO, 
-			     (LPBYTE) &ssp, sizeof(SERVICE_STATUS_PROCESS),
-			     &needed)) {
-	goto svc_cleanup;
-    }
+    ERR_COND_BAIL(!QueryServiceStatusEx(svc_control, SC_STATUS_PROCESS_INFO, 
+					(LPBYTE) &ssp, sizeof(SERVICE_STATUS_PROCESS),
+					&needed), ncf, EOTHER);
 
-    // Test status of service
-    if (ssp.dwCurrentState != SERVICE_STOPPED && ssp.dwCurrentState != SERVICE_STOP_PENDING) {
-	CloseServiceHandle(svc_control);
-	CloseServiceHandle(svc_manager);
-	goto svc_cleanup;
-    }
+    ERR_COND_BAIL(ssp.dwCurrentState != SERVICE_STOPPED && ssp.dwCurrentState != SERVICE_STOP_PENDING, ncf, EOTHER);
 
     // TODO: implement timeout
     while (ssp.dwCurrentState == SERVICE_STOP_PENDING) {
 	// timeout code here
     }
 
-    if (!StartService(svc_control, 0, NULL)) {
+    if (!StartService(svc_control, 0, NULL), ncf, EOTHER)) {
 	CloseServiceHandle(svc_control);
 	CloseServiceHandle(svc_manager);
-	goto svc_cleanup;
+	goto error;
     } else {
 	result = 0;
-	goto svc_cleanup;
+	goto error;
     }
 
     while (ssp.dwCurrentState == SERVICE_START_PENDING) {
@@ -244,12 +230,12 @@ int drv_if_up(struct netcf_if *nif) {
 
     if (ssp.dwCurrentState == SERVICE_RUNNING) {
 	result = 0;
-	goto svc_cleanup;
+	goto error;
     } else {
-	goto svc_cleanup;
+	goto error;
     }
 
- svc_cleanup:
+error:
     CloseServiceHandle(svc_control);
     CloseServiceHandle(svc_manager);
     return result;
@@ -257,7 +243,8 @@ int drv_if_up(struct netcf_if *nif) {
 
 const char *drv_mac_string(struct netcf_if *nif) {
     const char *mac;
-    
+
+    // get mac here
     if (mac != NULL) {
 	if (nif->mac == NULL || STRNEQ(nif->mac, mac)) {
 	    FREE(nif->mac);
@@ -267,4 +254,32 @@ const char *drv_mac_string(struct netcf_if *nif) {
 	}
     }
     return nif->mac;
+}
+
+int if_is_active(struct netcf *ncf, const char *intf) {
+    struct ifreq ifr;
+
+    MEMZERO(&ifr, 1);
+    strncpy(ifr.ifr_name, intf, sizeof(ifr.ifr_name));
+    ifr.ifr_name[sizeof(ifr.ifr_name) - 1 ] = '\0';
+    // ioctl functions
+    if ( /* win32 ioctl code */ ) {
+	return 0;
+    }
+    return ((ifr.ifr_flags & IFF_UP) == IFF_UP);
+}
+    
+int drv_if_status(struct netcf_if *nif, unsigned int *flags) {
+    int is_active;
+
+    ERR_THROW(flags == NULL, nif->ncf, EOTHER, "NULL pointer for flags in ncf_if_status");
+    *flags = 0;
+    is_active = if_is_active(nif->ncf, nif->name);
+    if (is_active)
+	*flags |= NETCF_IFACE_ACTIVE;
+    else
+	*flags |= NETCF_IFACE_INACTIVE;
+    return 0;
+error:
+    return -1;
 }
