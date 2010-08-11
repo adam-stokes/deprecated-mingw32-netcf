@@ -16,11 +16,12 @@ noinst_PROGRAMS = ncftransform
 EXTRA_DIST = netcf_public.syms \
 	netcf_private.syms
 
+DRIVER_SOURCES = dutil.h dutil.c netcf.c 
+
 if PLATFORM_WIN32
-DRIVER_SOURCES = drv_initscripts-win.c
+DRIVER_SOURCES += drv_initscripts-win.c
 else
-DRIVER_SOURCES = drv_initscripts.c dutil.h dutil.c \
-	dutil_linux.h dutil_linux.c netcf.c 
+DRIVER_SOURCES += dutil_linux.c drv_initscripts.c
 endif
 
 BUILT_SOURCES = datadir.h netcf.syms

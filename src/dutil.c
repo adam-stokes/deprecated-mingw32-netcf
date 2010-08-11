@@ -23,7 +23,10 @@
 #include <config.h>
 #include <internal.h>
 
+#ifndef WIN32
 #include <augeas.h>
+#endif
+
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -46,12 +49,14 @@
 #include "netcf.h"
 #include "dutil.h"
 
+#ifndef WIN32
 #include <netlink/socket.h>
 #include <netlink/cache.h>
 #include <netlink/route/addr.h>
 #include <netlink/route/link.h>
 /* For some reason, the headers for libnl vlan functions aren't installed */
 extern int rtnl_link_vlan_get_id(struct rtnl_link *link);
+#endif
 
 #include <dirent.h>
 
@@ -76,6 +81,7 @@ int xasprintf(char **strp, const char *format, ...) {
   return result;
 }
 
+#ifndef WIN32
 int add_augeas_xfm_table(struct netcf *ncf,
                          const struct augeas_xfm_table *xfm) {
     int slot, r;
@@ -119,6 +125,7 @@ int remove_augeas_xfm_table(struct netcf *ncf,
     }
     return 0;
 }
+
 
 /* Get the Augeas instance; if we already initialized it, just return
  * it. Otherwise, create a new one and return that.
@@ -244,6 +251,7 @@ int aug_fmt_match(struct netcf *ncf, char ***matches, const char *fmt, ...) {
     free(path);
     return -1;
 }
+#endif /* win32 */
 
 void free_matches(int nint, char ***intf) {
     if (*intf != NULL) {

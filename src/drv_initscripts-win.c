@@ -34,6 +34,7 @@
 #include "safe-alloc.h"
 #include "ref.h"
 #include "list.h"
+#include "dutil.h"
 
 #include <libxml/parser.h>
 #include <libxml/relaxng.h>
@@ -59,7 +60,7 @@ static int cmpstrp(const void *p1, const void *p2) {
 static int list_interface_ids(struct netcf *ncf,
 			      int maxnames,
 			      char **names,
-			      unsigned int flags,
+			      ATTRIBUTE_UNUSED unsigned int flags,
 			      ATTRIBUTE_UNUSED const char *id_attr) {
 
     PIP_INTERFACE_INFO intf;
@@ -82,7 +83,7 @@ static int list_interface_ids(struct netcf *ncf,
     }
     for (i = 0; (i < num_intf) && (nint < maxnames); i++) {
 	if(names) {
-	    names[nint] = strdup(intf->Adapter[nint].Name);
+	    names[nint] = strdup((char *)intf->Adapter[nint].Name);
 	}
 	nint++;
     }
@@ -94,13 +95,13 @@ error:
 int drv_list_interfaces(struct netcf *ncf,
 			int maxnames,
 			char **names,
-			unsigned int flags) {
-    return list_interface_ids(ncf, maxnames, names, flags);
+			ATTRIBUTE_UNUSED unsigned int flags) {
+    return list_interface_ids(ncf, maxnames, names, flags, NULL);
 }
 
-int drv_num_of_interfaces(ATTRIBUTE_UNUSED struct netcf *ncf,
-				 unsigned int flags) {
-    return list_interface_ids(ncf, 0, NULL, flags);
+int drv_num_of_interfaces(struct netcf *ncf,
+			  ATTRIBUTE_UNUSED unsigned int flags) {
+    return list_interface_ids(ncf, 0, NULL, flags, NULL);
 }
 
 static int stop_dep_svcs(SC_HANDLE svc_manager, SC_HANDLE svc_control) {
@@ -126,6 +127,8 @@ static int stop_dep_svcs(SC_HANDLE svc_manager, SC_HANDLE svc_control) {
 
 int drv_if_down(struct netcf_if *nif) {
     SERVICE_STATUS_PROCESS ssp;
+    struct netcf *ncf = nif->ncf;
+    int result = -1;
 
     svc_manager = OpenSCManager(
 				NULL,
@@ -160,7 +163,7 @@ int drv_if_down(struct netcf_if *nif) {
     }
 
     /* Dependent services need to be stopped */
-    stop_dep_svcs();
+    stop_dep_svcs(svc_manager, svc_control);
     
     /* Send stop code to service */
     ERR_COND_BAIL(!ControlService(svc_control,
@@ -185,6 +188,7 @@ error:
 
 int drv_if_up(struct netcf_if *nif) {
     SERVICE_STATUS_PROCESS ssp;
+    struct netcf *ncf = nif->ncf;
     DWORD needed;
     int result = -1;
     
@@ -215,7 +219,7 @@ int drv_if_up(struct netcf_if *nif) {
 	// timeout code here
     }
 
-    if (!StartService(svc_control, 0, NULL), ncf, EOTHER)) {
+    if (!StartService(svc_control, 0, NULL)) {
 	CloseServiceHandle(svc_control);
 	CloseServiceHandle(svc_manager);
 	goto error;
@@ -241,45 +245,30 @@ error:
     return result;
 }
 
-const char *drv_mac_string(struct netcf_if *nif) {
-    const char *mac;
+struct netcf_if *drv_lookup_by_name(struct netcf *ncf, const char *name) {
+    struct netcf_if *nif = NULL;
+    char *pathx = NULL;
+    char *name_dup = NULL;
 
-    // get mac here
-    if (mac != NULL) {
-	if (nif->mac == NULL || STRNEQ(nif->mac, mac)) {
-	    FREE(nif->mac);
-	    nif->mac = strdup(mac);
-	} else {
-	    FREE(nif->mac);
-	}
-    }
-    return nif->mac;
-}
+    /*  needs some research
+    pathx = find_ifcfg_path(ncf, name);
+    ERR_BAIL(ncf);
 
-int if_is_active(struct netcf *ncf, const char *intf) {
-    struct ifreq ifr;
+    if (pathx == NULL || is_slave(ncf, pathx))
+        goto done;
+    */
 
-    MEMZERO(&ifr, 1);
-    strncpy(ifr.ifr_name, intf, sizeof(ifr.ifr_name));
-    ifr.ifr_name[sizeof(ifr.ifr_name) - 1 ] = '\0';
-    // ioctl functions
-    if ( /* win32 ioctl code */ ) {
-	return 0;
-    }
-    return ((ifr.ifr_flags & IFF_UP) == IFF_UP);
-}
-    
-int drv_if_status(struct netcf_if *nif, unsigned int *flags) {
-    int is_active;
+    name_dup = strdup(name);
+    ERR_NOMEM(name_dup == NULL, ncf);
 
-    ERR_THROW(flags == NULL, nif->ncf, EOTHER, "NULL pointer for flags in ncf_if_status");
-    *flags = 0;
-    is_active = if_is_active(nif->ncf, nif->name);
-    if (is_active)
-	*flags |= NETCF_IFACE_ACTIVE;
-    else
-	*flags |= NETCF_IFACE_INACTIVE;
-    return 0;
-error:
-    return -1;
+    nif = make_netcf_if(ncf, name_dup);
+    ERR_BAIL(ncf);
+    goto done;
+
+ error:
+    unref(nif, netcf_if);
+    FREE(name_dup);
+ done:
+    // FREE(pathx);
+    return nif;
 }

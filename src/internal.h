@@ -133,14 +133,6 @@
 /*
  * netcf structures and internal API's
  */
-#ifdef WIN32
-struct netcf {
-    netcf_errcode_t  errcode;
-    char            *errdetails;          /* Error details */
-    struct driver   *driver;              /* Driver specific data */
-    unsigned int     debug;
-};
-#else
 struct netcf {
     ref_t            ref;
     char            *root;                /* The filesystem root, always ends
@@ -151,7 +143,6 @@ struct netcf {
     struct driver   *driver;              /* Driver specific data */
     unsigned int     debug;
 };
-#endif
 
 struct netcf_if {
     ref_t         ref;
