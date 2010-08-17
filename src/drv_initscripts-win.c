@@ -46,16 +46,11 @@
 
 #include <libexslt/exslt.h>
 
+#include <windows.h>
 #include <winsock2.h>
 #include <iphlpapi.h>
 
 SC_HANDLE svc_manager, svc_control;
-
-static int cmpstrp(const void *p1, const void *p2) {
-    const char *s1 = * (const char **)p1;
-    const char *s2 = * (const char **)p2;
-    return strcmp(s1, s2);
-}
 
 static int list_interface_ids(struct netcf *ncf,
 			      int maxnames,
@@ -104,13 +99,15 @@ int drv_num_of_interfaces(struct netcf *ncf,
     return list_interface_ids(ncf, 0, NULL, flags, NULL);
 }
 
-static int stop_dep_svcs(SC_HANDLE svc_manager, SC_HANDLE svc_control) {
+static int stop_dep_svcs() {
     // TODO: add code to stop dependent services
     int result = -1;
     DWORD i, needed, count;
+    /* unused for now
     ENUM_SERVICE_STATUS ess;
     SC_HANDLE depserv;
     SERVICE_STATUS_PROCESS ssp;
+    */
 
     if (EnumDependentServices(svc_control, SERVICE_ACTIVE, NULL,
 			      0, &needed, &count)) {
@@ -163,7 +160,7 @@ int drv_if_down(struct netcf_if *nif) {
     }
 
     /* Dependent services need to be stopped */
-    stop_dep_svcs(svc_manager, svc_control);
+    stop_dep_svcs();
     
     /* Send stop code to service */
     ERR_COND_BAIL(!ControlService(svc_control,
@@ -247,7 +244,7 @@ error:
 
 struct netcf_if *drv_lookup_by_name(struct netcf *ncf, const char *name) {
     struct netcf_if *nif = NULL;
-    char *pathx = NULL;
+    /* char *pathx = NULL; */
     char *name_dup = NULL;
 
     /*  needs some research
@@ -271,4 +268,20 @@ struct netcf_if *drv_lookup_by_name(struct netcf *ncf, const char *name) {
  done:
     // FREE(pathx);
     return nif;
+}
+
+void drv_close(struct netcf *ncf) {
+    if (ncf == NULL || ncf->driver == NULL)
+        return;
+    xsltFreeStylesheet(ncf->driver->get);
+    xsltFreeStylesheet(ncf->driver->put);
+    xmlRelaxNGFree(ncf->driver->rng);
+    netlink_close(ncf);
+    if (ncf->driver->ioctl_fd >= 0)
+        close(ncf->driver->ioctl_fd);
+    FREE(ncf->driver);
+}
+
+void drv_entry(struct netcf *ncf) {
+    ncf->driver->load_augeas = 0;
 }

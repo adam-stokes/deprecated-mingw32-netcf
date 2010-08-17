@@ -24,12 +24,11 @@
 #include "internal.h"
 
 #include <errno.h>
-#ifdef _WIN32
+#ifdef WIN32
 #include <winsock2.h>
-#else
-#include <arpa/inet.h>
 #endif
 
+#include <arpa/inet.h>
 #include <libxml/xpath.h>
 #include <libxml/xpathInternals.h>
 #include <libxslt/xsltutils.h>

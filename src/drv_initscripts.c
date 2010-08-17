@@ -23,7 +23,10 @@
 #include <config.h>
 #include <internal.h>
 
+#ifndef WIN32
 #include <augeas.h>
+#endif
+
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -35,7 +38,9 @@
 #include "ref.h"
 #include "list.h"
 #include "dutil.h"
+#ifndef WIN32
 #include "dutil_linux.h"
+#endif
 
 #include <libxml/parser.h>
 #include <libxml/relaxng.h>

@@ -74,9 +74,8 @@ getopt-posix
 string
 sys_socket
 netinet_in
-inet_ntop
-inet_pton
 vasprintf
+fcntl
 '
 
 # Tell gnulib to:
@@ -85,7 +84,6 @@ vasprintf
 #   put *.[ch] files in new gnulib/lib/ dir.
 
 $gnulib_tool			\
-  --lgpl			\
   --with-tests			\
   --m4-base=gnulib/m4		\
   --source-base=gnulib/lib	\

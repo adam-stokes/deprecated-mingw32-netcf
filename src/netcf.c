@@ -35,7 +35,7 @@
 #include <signal.h>
 #include <errno.h>
 #include "safe-alloc.h"
-
+ 
 #include "internal.h"
 #include "netcf.h"
 #include "dutil.h"
@@ -119,6 +119,10 @@ int ncf_close(struct netcf *ncf) {
 
     ERR_COND_BAIL(ncf->ref > 1, ncf, EINUSE);
 
+#ifndef WIN32
+    *ncf = NULL;
+    ncf->driver = NULL;
+#endif
     drv_close(ncf);
     unref(ncf, netcf);
     return 0;

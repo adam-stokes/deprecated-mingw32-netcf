@@ -25,6 +25,10 @@
 
 #ifndef WIN32
 #include <augeas.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#else
+#include <sys/socket.h>
 #endif
 
 #include <stdlib.h>
@@ -40,8 +44,6 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <net/if.h>
-#include <netinet/in.h>
 
 #include "safe-alloc.h"
 #include "ref.h"
@@ -49,7 +51,7 @@
 #include "netcf.h"
 #include "dutil.h"
 
-#ifndef WIN32
+#ifdef HAVE_LIBNL
 #include <netlink/socket.h>
 #include <netlink/cache.h>
 #include <netlink/route/addr.h>
@@ -251,7 +253,6 @@ int aug_fmt_match(struct netcf *ncf, char ***matches, const char *fmt, ...) {
     free(path);
     return -1;
 }
-#endif /* win32 */
 
 void free_matches(int nint, char ***intf) {
     if (*intf != NULL) {
@@ -262,7 +263,7 @@ void free_matches(int nint, char ***intf) {
 }
 
 xsltStylesheetPtr parse_stylesheet(struct netcf *ncf,
-                                          const char *fname) {
+                                   const char *fname) {
     xsltStylesheetPtr result = NULL;
     char *path = NULL;
     int r;
@@ -463,6 +464,7 @@ static xmlNodePtr xml_new_node(xmlDocPtr doc,
     return ret;
 }
 
+
 /* Find existing node of given name within parent, or create and link
  * in a new one if not found.
  */
@@ -483,6 +485,7 @@ static xmlNodePtr xml_node(xmlDocPtr doc,
     }
     return ret;
 }
+
 
 int init_ioctl_fd(struct netcf *ncf) {
     int ioctl_fd;
@@ -664,6 +667,7 @@ done:
     return ret;
 
 }
+#endif /* win32 */
 
 /* Create a new netcf if instance for interface NAME */
 struct netcf_if *make_netcf_if(struct netcf *ncf, char *name) {
@@ -681,6 +685,7 @@ struct netcf_if *make_netcf_if(struct netcf *ncf, char *name) {
     return result;
 }
 
+#ifndef WIN32
 /*
  * Test interface
  */
@@ -723,7 +728,6 @@ int dutil_put_aug(struct netcf *ncf, const char *aug_xml, char **ncf_xml) {
     xmlFreeDoc(aug_doc);
     return result;
 }
-
 
 static void add_type_specific_info(struct netcf *ncf,
                                    const char *ifname, int ifindex,
@@ -1147,7 +1151,7 @@ void add_state_to_xml_doc(struct netcf_if *nif, xmlDocPtr doc) {
 error:
     return;
 }
-
+#endif /* win32 */
 /*
  * Bringing interfaces up/down
  */
