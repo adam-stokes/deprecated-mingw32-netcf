@@ -279,13 +279,16 @@ exec_program(struct netcf *ncf,
              const char *commandline,
              pid_t *pid)
 {
+#ifdef HAVE_PTHREAD_SIGMASK
     sigset_t oldmask, newmask;
     struct sigaction sig_action;
     char errbuf[128];
+#endif
 
     /* commandline is only used for error reporting */
     if (commandline == NULL)
         commandline = argv[0];
+#ifdef HAVE_PTHREAD_SIGMASK
     /*
      * Need to block signals now, so that child process can safely
      * kill off caller's signal handlers without a race.
@@ -339,7 +342,6 @@ exec_program(struct netcf *ncf,
         /* don't report_error, as it will never be seen anyway */
         _exit(1);
     }
-
     /* close all open file descriptors */
 #ifdef _SC_OPEN_MAX
     int openmax = sysconf (_SC_OPEN_MAX);
@@ -348,6 +350,7 @@ exec_program(struct netcf *ncf,
 #endif
     for (i = 3; i < openmax; i++)
         close(i);
+#endif
 
     execvp(argv[0], (char **) argv);
 

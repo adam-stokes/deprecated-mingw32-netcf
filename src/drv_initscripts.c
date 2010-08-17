@@ -23,7 +23,7 @@
 #include <config.h>
 #include <internal.h>
 
-#ifndef WIN32
+#ifdef HAVE_LIBAUGEAS
 #include <augeas.h>
 #endif
 
@@ -168,7 +168,9 @@ static char *find_ifcfg_path_by_hwaddr(struct netcf *ncf, const char *mac) {
     int match = -1;
     for (int i=0; i < nhwaddr; i++) {
         const char *addr;
+#ifdef HAVE_LIBAUGEAS
         r = aug_get(aug, hwaddr[i], &addr);
+#endif
         ERR_COND_BAIL(r != 1, ncf, EOTHER);
         if (STRCASEEQ(addr, mac))
             match = i;
@@ -189,16 +191,20 @@ static char *find_ifcfg_path_by_hwaddr(struct netcf *ncf, const char *mac) {
  * interface by checking for an entry 'DEVICE=NAME'
  */
 static char *find_ifcfg_path_by_device(struct netcf *ncf, const char *name) {
+#ifdef HAVE_LIBAUGEAS
     struct augeas *aug = NULL;
+#endif
     int ndevs = 0;
     char **devs = NULL;
 
+#ifdef HAVE_LIBAUGEAS
     aug = get_augeas(ncf);
     ERR_BAIL(ncf);
 
     ndevs = aug_fmt_match(ncf, &devs, "%s[DEVICE = '%s']",
                           ifcfg_path, name);
     ERR_COND_BAIL(ndevs < 0, ncf, EOTHER);
+#endif
 
     if (ndevs == 0)
         return NULL;

@@ -57,12 +57,13 @@ NETCF_CHECK_READLINE
 NETCF_LIBDEPS=$(echo $LIBAUGEAS_LIBS $LIBEXSLT_LIBS $LIBXSLT_LIBS $LIBXML_LIBS $LIBNL_LIBS)
 AC_SUBST([NETCF_LIBDEPS])
 
-AC_CHECK_HEADER([pthread.h],
-	[AC_CHECK_LIB([pthread],[pthread_join],[
-		AC_DEFINE([HAVE_LIBPTHREAD],[],[Define if pthread (-lpthread)])
-		AC_DEFINE([HAVE_PTHREAD_H],[],[Define if <pthread.h>])
-		LIBS="-lpthread $LIBS"
-	])])
+dnl check pthread functions
+dnl pulled from:
+dnl http://www.mail-archive.com/libvir-list@redhat.com/msg24187.html
+old_LIBS=$LIBS
+LIBS="$LIBS $LIB_PTHREAD"
+AC_CHECK_FUNCS([pthread_sigmask pthread_mutexattr_init])
+LIBS=$old_libs
 
 AC_OUTPUT(Makefile                                          \
           gnulib/lib/Makefile                               \
