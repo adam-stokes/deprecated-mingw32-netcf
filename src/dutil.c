@@ -83,7 +83,7 @@ int xasprintf(char **strp, const char *format, ...) {
   return result;
 }
 
-#ifndef WIN32
+#ifdef HAVE_LIBAUGEAS
 int add_augeas_xfm_table(struct netcf *ncf,
                          const struct augeas_xfm_table *xfm) {
     int slot, r;
@@ -253,6 +253,7 @@ int aug_fmt_match(struct netcf *ncf, char ***matches, const char *fmt, ...) {
     free(path);
     return -1;
 }
+#endif /* LIBAUGEAS */
 
 void free_matches(int nint, char ***intf) {
     if (*intf != NULL) {
@@ -486,7 +487,7 @@ static xmlNodePtr xml_node(xmlDocPtr doc,
     return ret;
 }
 
-
+#ifndef WIN32
 int init_ioctl_fd(struct netcf *ncf) {
     int ioctl_fd;
     int flags;
@@ -506,7 +507,9 @@ error:
         close(ioctl_fd);
     return -1;
 }
+#endif /* WIN32 */
 
+#ifdef HAVE_LIBNL
 int netlink_init(struct netcf *ncf) {
 
     ncf->driver->nl_sock = nl_handle_alloc();
@@ -555,7 +558,13 @@ int netlink_close(struct netcf *ncf) {
     }
     return 0;
 }
+#endif /* LIBNL */
 
+#ifdef WIN32
+int if_is_active(struct netcf *ncf, const char *intf) {
+    return 0;
+}
+#else
 int if_is_active(struct netcf *ncf, const char *intf) {
     struct ifreq ifr;
 
@@ -567,6 +576,7 @@ int if_is_active(struct netcf *ncf, const char *intf) {
     }
     return ((ifr.ifr_flags & IFF_UP) == IFF_UP);
 }
+#endif /* WIN32 */
 
 netcf_if_type_t if_type(struct netcf *ncf, const char *intf) {
     char *path;
@@ -667,7 +677,6 @@ done:
     return ret;
 
 }
-#endif /* win32 */
 
 /* Create a new netcf if instance for interface NAME */
 struct netcf_if *make_netcf_if(struct netcf *ncf, char *name) {
@@ -685,7 +694,7 @@ struct netcf_if *make_netcf_if(struct netcf *ncf, char *name) {
     return result;
 }
 
-#ifndef WIN32
+#ifdef HAVE_LIBAUGEAS
 /*
  * Test interface
  */
@@ -728,6 +737,7 @@ int dutil_put_aug(struct netcf *ncf, const char *aug_xml, char **ncf_xml) {
     xmlFreeDoc(aug_doc);
     return result;
 }
+#endif /* LIBNL */
 
 static void add_type_specific_info(struct netcf *ncf,
                                    const char *ifname, int ifindex,
@@ -744,6 +754,11 @@ struct nl_ip_callback_data {
     struct netcf *ncf;
 };
 
+#ifdef WIN32
+static void add_ip_info_cb(struct nl_object *obj ATTRIBUTE_UNUSED, void *arg) {
+
+}
+#else
 /* add all ip addresses for the given interface to the xml document
 */
 static void add_ip_info_cb(struct nl_object *obj, void *arg) {
@@ -824,6 +839,7 @@ static void add_ip_info_cb(struct nl_object *obj, void *arg) {
 error:
     return;
 }
+#endif /* WIN32 */
 
 static void add_ip_info(struct netcf *ncf,
                         const char *ifname ATTRIBUTE_UNUSED, int ifindex,
@@ -1151,7 +1167,7 @@ void add_state_to_xml_doc(struct netcf_if *nif, xmlDocPtr doc) {
 error:
     return;
 }
-#endif /* win32 */
+
 /*
  * Bringing interfaces up/down
  */

@@ -366,13 +366,14 @@ static int list_interfaces(struct netcf *ncf, char ***intf) {
             i += 1;
         }
     }
+#endif
     return result;
  error:
     free_matches(nint, intf);
     return -1;
 }
-#endif
 
+#ifndef WIN32
 /* Ensure we have an iptables rule to bridge physdevs. We take care of both
  * systems using iptables directly, and systems using lokkit (even if it's
  * only installed, but not used)
@@ -493,6 +494,7 @@ static void bridge_physdevs(struct netcf *ncf) {
     free(p);
     return;
 }
+#endif /* WIN32 */
 
 int drv_init(struct netcf *ncf) {
     int r;
@@ -502,9 +504,11 @@ int drv_init(struct netcf *ncf) {
 
     ncf->driver->ioctl_fd = -1;
 
+#ifdef HAVE_LIBAUGEAS
     r = add_augeas_xfm_table(ncf, &augeas_xfm_common);
     if (r < 0)
         goto error;
+#endif /* LIBAUGEAS */
 
     // FIXME: Check for errors
     xsltInit();
@@ -514,15 +518,19 @@ int drv_init(struct netcf *ncf) {
     ncf->driver->rng = rng_parse(ncf, "interface.rng");
     ERR_BAIL(ncf);
 
+#ifndef WIN32
     bridge_physdevs(ncf);
     ERR_BAIL(ncf);
+#endif /* WIN32 */
 
     /* open a socket for interface ioctls */
     ncf->driver->ioctl_fd = init_ioctl_fd(ncf);
     if (ncf->driver->ioctl_fd < 0)
         goto error;
+#ifdef HAVE_LIBNL
     if (netlink_init(ncf) < 0)
         goto error;
+#endif /* LIBNL */
     return 0;
 
  error:
@@ -536,11 +544,15 @@ void drv_close(struct netcf *ncf) {
     xsltFreeStylesheet(ncf->driver->get);
     xsltFreeStylesheet(ncf->driver->put);
     xmlRelaxNGFree(ncf->driver->rng);
+#ifdef HAVE_LIBNL
     netlink_close(ncf);
+#endif /* LIBNL */
     if (ncf->driver->ioctl_fd >= 0)
         close(ncf->driver->ioctl_fd);
+#ifdef HAVE_LIBAUGEAS
     aug_close(ncf->driver->augeas);
     FREE(ncf->driver->augeas_xfm_tables);
+#endif /* LIBAUGEAS */
     FREE(ncf->driver);
 }
 
@@ -552,12 +564,16 @@ static int list_interface_ids(struct netcf *ncf,
                               int maxnames, char **names,
                               unsigned int flags,
                               const char *id_attr) {
-    struct augeas *aug = NULL;
     int nint = 0, nmatches = 0, nqualified = 0, result = 0, r;
     char **intf = NULL, **matches = NULL;
+#ifdef HAVE_LIBAUGEAS
+    struct augeas *aug = NULL;
 
     aug = get_augeas(ncf);
     ERR_BAIL(ncf);
+#elif WIN32
+    goto error;
+#endif
     nint = list_interfaces(ncf, &intf);
     ERR_BAIL(ncf);
     if (!names) {
@@ -572,9 +588,10 @@ static int list_interface_ids(struct netcf *ncf,
             int is_qualified = ((flags & (NETCF_IFACE_ACTIVE|NETCF_IFACE_INACTIVE))
                                 == (NETCF_IFACE_ACTIVE|NETCF_IFACE_INACTIVE));
 
+#ifdef HAVE_LIBAUGEAS
             r = aug_get(aug, matches[nmatches-1], &name);
             ERR_COND_BAIL(r < 0, ncf, EOTHER);
-
+#endif /* LIBAUGEAS */
             if (!is_qualified) {
                 int is_active = if_is_active(ncf, name);
                 if ((is_active && (flags & NETCF_IFACE_ACTIVE))
@@ -615,6 +632,7 @@ struct netcf_if *drv_lookup_by_name(struct netcf *ncf, const char *name) {
     struct netcf_if *nif = NULL;
     char *pathx = NULL;
     char *name_dup = NULL;
+#ifdef HAVE_LIBAUGEAS
     struct augeas *aug;
 
     aug = get_augeas(ncf);
@@ -622,6 +640,7 @@ struct netcf_if *drv_lookup_by_name(struct netcf *ncf, const char *name) {
 
     pathx = find_ifcfg_path(ncf, name);
     ERR_BAIL(ncf);
+#endif /* LIBAUGEAS */
 
     if (pathx == NULL || is_slave(ncf, pathx))
         goto done;
@@ -641,6 +660,7 @@ struct netcf_if *drv_lookup_by_name(struct netcf *ncf, const char *name) {
     return nif;
 }
 
+#ifndef WIN32
 /* Get an XML desription of the interfaces (just paths, really) in INTF.
  * The format is a very simple representation of the Augeas tree (see
  * xml/augeas.rng)
@@ -782,6 +802,7 @@ char *drv_xml_desc(struct netcf_if *nif) {
     xmlFreeDoc(aug_xml);
     return result;
 }
+#endif /* WIN32 */
 
 /* return the current live configuration state - a combination of
  * drv_xml_desc + results of querying the interface directly */
@@ -891,6 +912,7 @@ static bool is_bond(struct netcf *ncf, const char *name) {
     return nmatches > 0;
 }
 
+#ifndef WIN32
 /* The device NAME is a bridge if it has an entry TYPE=Bridge */
 static bool is_bridge(struct netcf *ncf, const char *name) {
     int nmatches = 0;
@@ -926,13 +948,14 @@ static int bridge_slaves(struct netcf *ncf, const char *name, char ***slaves) {
     free_matches(nslaves, slaves);
     return -1;
 }
-
+#endif /* WIN32 */
 
 /* For an interface NAME, remove the ifcfg-* files for that interface and
  * all its slaves. */
 static void rm_interface(struct netcf *ncf, const char *name) {
     int r;
     char *path = NULL;
+#ifdef HAVE_LIBAUGEAS
     struct augeas *aug = NULL;
 
     aug = get_augeas(ncf);
@@ -948,6 +971,9 @@ static void rm_interface(struct netcf *ncf, const char *name) {
 
     r = aug_rm(aug, path);
     ERR_COND_BAIL(r < 0, ncf, EOTHER);
+#elif WIN32
+    goto error;
+#endif
  error:
     FREE(path);
 }
@@ -965,7 +991,9 @@ static void rm_all_interfaces(struct netcf *ncf, xmlDocPtr ncf_xml) {
 	context = xmlXPathNewContext(ncf_xml);
     ERR_NOMEM(context == NULL, ncf);
 
-	obj = xmlXPathEvalExpression(BAD_CAST "//interface", context);
+    obj = xmlXPathEvalExpression(BAD_CAST
+                                 "//interface[count(parent::vlan) = 0]",
+                                 context);
     ERR_NOMEM(obj == NULL, ncf);
 
 
@@ -1024,6 +1052,7 @@ struct netcf_if *drv_define(struct netcf *ncf, const char *xml_str) {
     char *name = NULL;
     struct netcf_if *result = NULL;
     int r;
+#ifdef HAVE_LIBAUGEAS
     struct augeas *aug = get_augeas(ncf);
 
     ncf_xml = parse_xml(ncf, xml_str);
@@ -1053,6 +1082,7 @@ struct netcf_if *drv_define(struct netcf *ncf, const char *xml_str) {
         aug_print(aug, stderr, "/augeas//error");
     }
     ERR_THROW(r < 0, ncf, EOTHER, "aug_save failed");
+#endif /* LIBAUGEAS */
 
     result = make_netcf_if(ncf, name);
     ERR_BAIL(ncf);
@@ -1067,22 +1097,24 @@ struct netcf_if *drv_define(struct netcf *ncf, const char *xml_str) {
 }
 
 int drv_undefine(struct netcf_if *nif) {
-    struct augeas *aug = NULL;
     struct netcf *ncf = nif->ncf;
     int r;
+#ifdef HAVE_LIBAUGEAS
+    struct augeas *aug = NULL;
 
     aug = get_augeas(ncf);
     ERR_BAIL(ncf);
 
     bond_setup(ncf, nif->name, false);
     ERR_BAIL(ncf);
-
+#endif
     rm_interface(ncf, nif->name);
     ERR_BAIL(ncf);
 
+#ifdef HAVE_LIBAUGEAS
     r = aug_save(aug);
     ERR_COND_BAIL(r < 0, ncf, EOTHER);
-
+#endif
     return 0;
  error:
     return -1;
@@ -1091,13 +1123,14 @@ int drv_undefine(struct netcf_if *nif) {
 int drv_lookup_by_mac_string(struct netcf *ncf, const char *mac,
                              int maxifaces, struct netcf_if **ifaces)
 {
-    struct augeas *aug = NULL;
     char *path = NULL, *ifcfg = NULL;
     const char **names = NULL;
     int nmatches = 0;
     char **matches = NULL;
     int r;
     int result = -1;
+#ifdef HAVE_LIBAUGEAS
+    struct augeas *aug = NULL;
 
     MEMZERO(ifaces, maxifaces);
 
@@ -1132,6 +1165,9 @@ int drv_lookup_by_mac_string(struct netcf *ncf, const char *mac,
         ERR_BAIL(ncf);
     }
     result = cnt;
+#elif WIN32
+    goto done;
+#endif
     goto done;
 
  error:
@@ -1151,8 +1187,12 @@ const char *drv_mac_string(struct netcf_if *nif) {
     char *path = NULL;
     int r;
 
+#ifdef HAVE_LIBAUGEAS
     r = aug_get_mac(ncf, nif->name, &mac);
     ERR_THROW(r < 0, ncf, EOTHER, "could not lookup MAC of %s", nif->name);
+#elif WIN32
+    goto error;
+#endif
 
     if (mac != NULL) {
         if (nif->mac == NULL || STRNEQ(nif->mac, mac)) {
@@ -1180,6 +1220,7 @@ int drv_if_up(struct netcf_if *nif) {
     int nslaves = 0;
     int result = -1;
 
+#ifdef HAVE_LIBAUGEAS
     if (is_bridge(ncf, nif->name)) {
         /* Bring up bridge slaves before the bridge */
         nslaves = bridge_slaves(ncf, nif->name, &slaves);
@@ -1192,6 +1233,9 @@ int drv_if_up(struct netcf_if *nif) {
     }
     run1(ncf, ifup, nif->name);
     ERR_BAIL(ncf);
+#elif WIN32
+    goto error;
+#endif
     result = 0;
  error:
     free_matches(nslaves, &slaves);
@@ -1205,6 +1249,7 @@ int drv_if_down(struct netcf_if *nif) {
     int nslaves = 0;
     int result = -1;
 
+#ifdef HAVE_LIBAUGEAS
     run1(ncf, ifdown, nif->name);
     ERR_BAIL(ncf);
     if (is_bridge(ncf, nif->name)) {
@@ -1217,12 +1262,16 @@ int drv_if_down(struct netcf_if *nif) {
             ERR_BAIL(ncf);
         }
     }
+#elif WIN32
+    goto error;
+#endif
     result = 0;
  error:
     free_matches(nslaves, &slaves);
     return result;
 }
 
+#ifdef HAVE_LIBAUGEAS
 /*
  * Test interface
  */
@@ -1236,6 +1285,7 @@ int drv_put_aug(struct netcf *ncf, const char *aug_xml, char **ncf_xml) {
     /* Use utility implementation */
     return dutil_put_aug(ncf, aug_xml, ncf_xml);
 }
+#endif
 
 /*
  * Local variables:
