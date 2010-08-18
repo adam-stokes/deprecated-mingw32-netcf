@@ -62,6 +62,7 @@ int main(int argc, char **argv) {
     if (r < 0)
         die("Failed to initialize netcf\n");
 
+#ifdef HAVE_LIBAUGEAS
     if (STREQ(argv[1], "get")) {
         r = ncf_get_aug(ncf, in_xml, &out_xml);
     } else {
@@ -77,7 +78,7 @@ int main(int argc, char **argv) {
     } else {
         puts(out_xml);
     }
-
+#endif /* LIBAUGEAS */
     cleanup();
 }
 /*

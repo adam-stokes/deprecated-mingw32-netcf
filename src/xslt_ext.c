@@ -24,9 +24,6 @@
 #include "internal.h"
 
 #include <errno.h>
-#ifdef WIN32
-#include <winsock2.h>
-#endif
 
 #include <arpa/inet.h>
 #include <libxml/xpath.h>

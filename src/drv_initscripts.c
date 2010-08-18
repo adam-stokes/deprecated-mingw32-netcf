@@ -510,6 +510,7 @@ int drv_init(struct netcf *ncf) {
         goto error;
 #endif /* LIBAUGEAS */
 
+#ifndef WIN32
     // FIXME: Check for errors
     xsltInit();
     exsltStrRegister();
@@ -518,15 +519,14 @@ int drv_init(struct netcf *ncf) {
     ncf->driver->rng = rng_parse(ncf, "interface.rng");
     ERR_BAIL(ncf);
 
-#ifndef WIN32
     bridge_physdevs(ncf);
     ERR_BAIL(ncf);
 #endif /* WIN32 */
-
     /* open a socket for interface ioctls */
     ncf->driver->ioctl_fd = init_ioctl_fd(ncf);
     if (ncf->driver->ioctl_fd < 0)
         goto error;
+
 #ifdef HAVE_LIBNL
     if (netlink_init(ncf) < 0)
         goto error;
@@ -802,7 +802,6 @@ char *drv_xml_desc(struct netcf_if *nif) {
     xmlFreeDoc(aug_xml);
     return result;
 }
-#endif /* WIN32 */
 
 /* return the current live configuration state - a combination of
  * drv_xml_desc + results of querying the interface directly */
@@ -841,6 +840,7 @@ char *drv_xml_state(struct netcf_if *nif) {
     result = 0;
     goto done;
 }
+#endif /* WIN32 */
 
 /* Report various status info about the interface as bits in
  * "flags". Returns 0 on success, -1 on failure

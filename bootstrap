@@ -73,10 +73,12 @@ sys_ioctl
 getopt-posix
 string
 sys_socket
+socket
 netinet_in
 vasprintf
 fcntl
 inet_ntop
+close
 '
 
 # Tell gnulib to:

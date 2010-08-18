@@ -27,8 +27,6 @@
 #include <augeas.h>
 #include <net/if.h>
 #include <netinet/in.h>
-#else
-#include <sys/socket.h>
 #endif
 
 #include <stdlib.h>
@@ -44,6 +42,7 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/socket.h>
 
 #include "safe-alloc.h"
 #include "ref.h"
@@ -487,7 +486,6 @@ static xmlNodePtr xml_node(xmlDocPtr doc,
     return ret;
 }
 
-#ifndef WIN32
 int init_ioctl_fd(struct netcf *ncf) {
     int ioctl_fd;
     int flags;
@@ -495,11 +493,14 @@ int init_ioctl_fd(struct netcf *ncf) {
     ioctl_fd = socket(AF_INET, SOCK_STREAM, 0);
     ERR_THROW(ioctl_fd < 0, ncf, EINTERNAL, "failed to open socket for interface ioctl");
 
+#ifndef WIN32
+    /* None of the needed file descriptor routines available in gnulib */
     flags = fcntl(ioctl_fd, F_GETFD);
     ERR_THROW(flags < 0, ncf, EINTERNAL, "failed to get flags for ioctl socket");
 
     flags = fcntl(ioctl_fd, F_SETFD, flags | FD_CLOEXEC);
     ERR_THROW(flags < 0, ncf, EINTERNAL, "failed to set FD_CLOEXEC flag on ioctl socket");
+#endif /* WIN32 */
     return ioctl_fd;
 
 error:
@@ -507,7 +508,6 @@ error:
         close(ioctl_fd);
     return -1;
 }
-#endif /* WIN32 */
 
 #ifdef HAVE_LIBNL
 int netlink_init(struct netcf *ncf) {
@@ -841,6 +841,7 @@ error:
 }
 #endif /* WIN32 */
 
+#ifdef HAVE_LIBNL
 static void add_ip_info(struct netcf *ncf,
                         const char *ifname ATTRIBUTE_UNUSED, int ifindex,
                         xmlDocPtr doc, xmlNodePtr root) {
@@ -1167,7 +1168,7 @@ void add_state_to_xml_doc(struct netcf_if *nif, xmlDocPtr doc) {
 error:
     return;
 }
-
+#endif /* LIBNL */
 /*
  * Bringing interfaces up/down
  */

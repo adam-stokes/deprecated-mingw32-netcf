@@ -91,13 +91,18 @@ int ncf_init(struct netcf **ncf, const char *root) {
     if (make_ref(*ncf) < 0)
         goto oom;
     if (root == NULL)
+#ifdef WIN32
+        root = "c:\\";
+#else
         root = "/";
+#endif
     if (root[strlen(root)-1] == '/') {
         (*ncf)->root = strdup(root);
     } else {
         if (xasprintf(&(*ncf)->root, "%s/", root) < 0)
             goto oom;
     }
+
     if ((*ncf)->root == NULL)
         goto oom;
     (*ncf)->data_dir = getenv("NETCF_DATADIR");
@@ -206,6 +211,7 @@ int ncf_if_down(struct netcf_if *nif) {
     return drv_if_down(nif);
 }
 
+#ifndef WIN32
 /* Produce an XML description for the interface, in the same format that
  * NCF_DEFINE expects
  */
@@ -223,6 +229,7 @@ char *ncf_if_xml_state(struct netcf_if *nif) {
     API_ENTRY(nif->ncf);
     return drv_xml_state(nif);
 }
+#endif
 
 /* Report various status info about the interface as bits in
  * "flags". Returns 0 on success, -1 on failure
@@ -254,6 +261,7 @@ int ncf_error(struct netcf *ncf, const char **errmsg, const char **details) {
     return errcode;
 }
 
+#ifdef HAVE_LIBAUGEAS
 /*
  * Test interface
  */
@@ -268,6 +276,7 @@ int ncf_put_aug(struct netcf *ncf, const char *aug_xml, char **ncf_xml) {
 
     return drv_put_aug(ncf, aug_xml, ncf_xml);
 }
+#endif /* LIBAUGEAS */
 
 /*
  * Internal helpers
