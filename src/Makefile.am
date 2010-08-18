@@ -20,6 +20,7 @@ DRIVER_SOURCES = dutil.h dutil.c netcf.c drv_initscripts.c
 
 if PLATFORM_WIN32
 WIN32LIB= -liphlpapi
+DRIVER_SOURCES += netcf_win.c netcf_win.h
 else
 DRIVER_SOURCES += dutil_linux.c
 endif

@@ -222,6 +222,7 @@ static char *find_ifcfg_path_by_device(struct netcf *ncf, const char *name) {
     return NULL;
 }
 
+#ifndef WIN32
 /* Find the path to the ifcfg file that has the configuration for
  * the device NAME. The logic follows the need_config function
  * in /etc/sysconfig/network-scripts/network-functions
@@ -338,9 +339,11 @@ static int list_ifcfg_paths(struct netcf *ncf, char ***intf) {
     free_matches(ndevs, &devs);
     return -1;
 }
+#endif
 
 static int list_interfaces(struct netcf *ncf, char ***intf) {
     int nint = 0, result = 0;
+#ifdef HAVE_LIBAUGEAS
     struct augeas *aug = NULL;
 
     aug = get_augeas(ncf);
@@ -349,6 +352,7 @@ static int list_interfaces(struct netcf *ncf, char ***intf) {
     /* Look in augeas for all interfaces */
     nint = list_ifcfg_paths(ncf, intf);
     ERR_BAIL(ncf);
+#elif WIN32
     result = nint;
 
     /* Filter out the interfaces that are slaves/subordinate */
@@ -367,6 +371,7 @@ static int list_interfaces(struct netcf *ncf, char ***intf) {
     free_matches(nint, intf);
     return -1;
 }
+#endif
 
 /* Ensure we have an iptables rule to bridge physdevs. We take care of both
  * systems using iptables directly, and systems using lokkit (even if it's
@@ -977,6 +982,7 @@ static void rm_all_interfaces(struct netcf *ncf, xmlDocPtr ncf_xml) {
     xmlXPathFreeContext(context);
 }
 
+#ifndef WIN32
 /* Dig through interface NAME and all its subinterfaces for bonds
  * and either add aliases in modprobe.conf for it (ALIAS == true), or
  * remove such aliases (ALIAS == false)
@@ -1011,6 +1017,7 @@ static void bond_setup(struct netcf *ncf, const char *name, bool alias) {
     free_matches(nslaves, &slaves);
     return;
 }
+#endif
 
 struct netcf_if *drv_define(struct netcf *ncf, const char *xml_str) {
     xmlDocPtr ncf_xml = NULL, aug_xml = NULL;
