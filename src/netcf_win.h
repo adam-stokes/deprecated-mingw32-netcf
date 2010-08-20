@@ -23,5 +23,10 @@
 #ifndef NETCF_WIN_H
 #define NETCF_WIN_H
 
+int num_interfaces();
+static int list_interface_ids(struct netcf *ncf,
+                              int maxnames, char **names,
+                              unsigned int flags,
+                              const char *id_attr);
 
 #endif /* NETCF_WIN_H */

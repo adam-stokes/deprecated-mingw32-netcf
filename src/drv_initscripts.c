@@ -571,8 +571,6 @@ static int list_interface_ids(struct netcf *ncf,
 
     aug = get_augeas(ncf);
     ERR_BAIL(ncf);
-#elif WIN32
-    goto error;
 #endif
     nint = list_interfaces(ncf, &intf);
     ERR_BAIL(ncf);

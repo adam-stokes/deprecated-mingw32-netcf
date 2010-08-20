@@ -78,6 +78,7 @@ netinet_in
 vasprintf
 fcntl
 inet_ntop
+inet_pton
 close
 '
 

@@ -39,6 +39,9 @@
 #include "internal.h"
 #include "netcf.h"
 #include "dutil.h"
+#ifdef WIN32
+#include "netcf_win.h"
+#endif
 
 /* Clear error code and details */
 #define API_ENTRY(ncf)                          \

@@ -20,7 +20,7 @@ DRIVER_SOURCES = dutil.h dutil.c netcf.c drv_initscripts.c
 
 if PLATFORM_WIN32
 WIN32LIB= -liphlpapi
-DRIVER_SOURCES += netcf_win.c netcf_win.h
+DRIVER_SOURCES += netcf_win.h netcf_win.c
 else
 DRIVER_SOURCES += dutil_linux.c
 endif
@@ -38,7 +38,7 @@ libnetcf_la_LIBADD = $(NETCF_LIBDEPS) $(GNULIB) $(WIN32LIB)
 #libnetcf_la_DEPENDENCIES = $(libnetcf_la_LIBADD) netcf.syms
 
 ncftool_SOURCES = ncftool.c
-ncftool_LDADD = libnetcf.la $(READLINE_LIBS) $(GNULIB) $(LIBREADLINE)
+ncftool_LDADD = libnetcf.la $(READLINE_LIBS) $(GNULIB)
 
 ncftransform_SOURCES = ncftransform.c
 ncftransform_LDADD = libnetcf.la $(GNULIB)
