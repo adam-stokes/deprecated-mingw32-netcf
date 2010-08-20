@@ -146,15 +146,23 @@ int ncf_close(struct netcf *ncf) {
  */
 int ncf_num_of_interfaces(struct netcf *ncf, unsigned int flags) {
     API_ENTRY(ncf);
+#ifdef WIN32
+    return w32_num_of_interfaces(ncf, flags);
+#endif
     return drv_num_of_interfaces(ncf, flags);
 }
 
-int ncf_list_interfaces(struct netcf *ncf, int maxnames, char **names, unsigned int flags) {
+int ncf_list_interfaces(struct netcf *ncf, int maxnames, 
+                        char **names, unsigned int flags) {
     int result;
 
     API_ENTRY(ncf);
     MEMZERO(names, maxnames);
+#ifdef WIN32
+    result = w32_list_interfaces(ncf, maxnames, names, flags);
+#else
     result = drv_list_interfaces(ncf, maxnames, names, flags);
+#endif
     if (result < 0)
         for (int i=0; i < maxnames; i++)
             FREE(names[i]);

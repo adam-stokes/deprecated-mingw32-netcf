@@ -23,10 +23,19 @@
 #ifndef NETCF_WIN_H
 #define NETCF_WIN_H
 
-int num_interfaces();
-static int list_interface_ids(struct netcf *ncf,
-                              int maxnames, char **names,
-                              unsigned int flags,
-                              const char *id_attr);
+#include "netcf.h"
+int
+w32_num_of_interfaces(struct netcf *ncf, unsigned int flags);
+
+int 
+w32_list_interface_ids(struct netcf *ncf, 
+		       int maxnames, 
+		       char **names, 
+		       unsigned int flags);
+
+int 
+w32_list_interfaces(struct netcf *ncf,
+		    int maxnames, char **names,
+		    unsigned int flags);
 
 #endif /* NETCF_WIN_H */

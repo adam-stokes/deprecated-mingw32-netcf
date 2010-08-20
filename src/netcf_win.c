@@ -3,9 +3,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <windows.h>
+#include <winsock2.h>
 #include <iphlpapi.h>
+#include "netcf_win.h"
 
-int num_interfaces() {
+int 
+w32_num_of_interfaces(struct netcf *ncf, unsigned int flags) {
     int nint = 0;
     PIP_INTERFACE_INFO info;
     info = (IP_INTERFACE_INFO *) malloc(sizeof(IP_INTERFACE_INFO));
@@ -25,18 +28,38 @@ int num_interfaces() {
     return 0;
 }
 
-static int list_interface_ids(struct netcf *ncf,
-                              int maxnames, char **names,
-                              unsigned int flags,
-                              const char *id_attr) {
-    int nint = 0, result = 0;
-    nint = num_interfaces();
-    printf("There are %d interfaces present\n", nint);
+int 
+w32_list_interface_ids(struct netcf *ncf,
+		       int maxnames, char **names,
+		       unsigned int flags) {
+    int nint = 0, i;
+    PIP_ADAPTER_INFO adapterInfo;
+    PIP_ADAPTER_INFO adapter = NULL;
+    DWORD result = 0;
+    ULONG buf;
+
+    adapterInfo = (IP_ADAPTER_INFO *) malloc(sizeof(IP_ADAPTER_INFO));
+    if(GetAdaptersInfo(adapterInfo, &buf) == ERROR_BUFFER_OVERFLOW) {
+	free(adapterInfo);
+	adapterInfo = (IP_ADAPTER_INFO *) malloc(buf);
+	if((result = GetAdaptersInfo(adapterInfo, &buf)) == NO_ERROR) {
+	    adapter = adapterInfo;
+	}
+    }
+    nint = w32_num_of_interfaces(ncf, flags);
     if (!names) {
         maxnames = nint;    /* if not returning list, ignore maxnames too */
     }
-    for (result = 0; (result < nint) && (nint < maxnames); result++) {
-	printf("tehehehehe\n");
+    for (i= 0; (result < nint) && (nint < maxnames); i++) {
+	printf("\tmoo\n");
     }
     return 0;
+}
+
+int
+w32_list_interfaces(struct netcf *ncf,
+		    int maxnames, char **names,
+		    unsigned int flags) {
+
+    return w32_list_interface_ids(ncf, maxnames, names, flags);
 }
