@@ -24,18 +24,23 @@
 #define NETCF_WIN_H
 
 #include "netcf.h"
-int
-w32_num_of_interfaces(struct netcf *ncf, unsigned int flags);
+#include <windows.h>
+#include <iphlpapi.h>
 
-int 
-w32_list_interface_ids(struct netcf *ncf, 
-		       int maxnames, 
-		       char **names, 
-		       unsigned int flags);
+int w32_num_of_interfaces(struct netcf *ncf, unsigned int flags);
 
-int 
-w32_list_interfaces(struct netcf *ncf,
-		    int maxnames, char **names,
-		    unsigned int flags);
+int w32_list_interface_ids(struct netcf *ncf, 
+			   int maxnames, 
+			   char **names, 
+			   unsigned int flags);
 
+int w32_list_interfaces(struct netcf *ncf,
+			int maxnames, char **names,
+			unsigned int flags);
+
+struct netcf_if *w32_lookup_by_name(struct netcf *ncf, const char *name);
+
+const char *w32_mac_string(struct netcf_if *nif);
+
+MIB_IFTABLE *w32_intf_table(MIB_IFTABLE *intfTable);
 #endif /* NETCF_WIN_H */

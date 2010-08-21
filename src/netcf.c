@@ -171,6 +171,9 @@ int ncf_list_interfaces(struct netcf *ncf, int maxnames,
 
 struct netcf_if * ncf_lookup_by_name(struct netcf *ncf, const char *name) {
     API_ENTRY(ncf);
+#ifdef WIN32
+    return w32_lookup_by_name(ncf, name);
+#endif
     return drv_lookup_by_name(ncf, name);
 }
 
