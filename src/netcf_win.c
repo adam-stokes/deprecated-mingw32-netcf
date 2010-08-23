@@ -34,12 +34,39 @@ MIB_IFTABLE *w32_intf_table(MIB_IFTABLE *intfTable) {
     return intfTable;
 }
 
+MIB_IFROW *w32_intf_row(MIB_IFROW *intfRow, const char *name) {
+    /* return a matched interface row */
+    MIB_IFTABLE *intfTable = NULL;
+    MIB_IFTABLE *intfTableDup = NULL;
+    DWORD ret = 0;
+    
+    /* TODO: lookup mac string by adapter name */
+    intfTableDup = w32_intf_table(intfTable);
+    if (intfTableDup != NULL) {
+	intfRow = (MIB_IFROW *) malloc(sizeof(MIB_IFROW));
+	if (intfRow == NULL)
+	    return NULL;
+	for (int i = 0; i < (int) intfTableDup->dwNumEntries; i++) {
+	    intfRow->dwIndex = intfTableDup->table[i].dwIndex;
+	    if (( ret = GetIfEntry(intfRow)) == NO_ERROR) {
+		/* TODO: Make sure NAME exist and is not a slave */
+		char name_dup[1024];
+		WideCharToMultiByte(CP_UTF8, 0, intfRow->wszName, -1, name_dup,
+				    sizeof(name_dup), NULL, NULL);
+		if (strcmp(name_dup,name) == 0) {
+		    return intfRow;
+		}
+	    }
+	}
+    }
+    return intfRow;
+}
+
 int w32_list_interface_ids(struct netcf *ncf,
 		       int maxnames, char **names,
 		       unsigned int flags) {
     int nint = 0, i;
     PIP_INTERFACE_INFO adapterInfo;
-    PIP_INTERFACE_INFO adapter = NULL;
     DWORD result = 0;
     ULONG buf;
 
@@ -51,13 +78,14 @@ int w32_list_interface_ids(struct netcf *ncf,
     if((result = GetInterfaceInfo(adapterInfo, &buf)) == NO_ERROR) {
 	nint = adapterInfo->NumAdapters;
 	if (!names) {
-	    maxnames = nint;    /* if not returning list, ignore maxnames too */
+	    maxnames = nint;
 	}
-	for (i = 0; (i < nint) && (nint < maxnames); i++) {
-	    /* needs active testing, etc */
-	    const char *name;
+	for (i = 0; i < nint; i++) {
+	    char name[1024];
 	    if (names) {
-		names[i] = strdup(adapterInfo->Adapter[i].Name);
+		WideCharToMultiByte(CP_UTF8, 0, adapterInfo->Adapter[i].Name,
+				    -1, name, sizeof(name), NULL, NULL);
+		names[i] = strdup(name);
 		if (names[i] == NULL)
 		    return -1;
 	    }
@@ -82,7 +110,6 @@ int w32_num_of_interfaces(struct netcf *ncf, unsigned int flags) {
 
 struct netcf_if *w32_lookup_by_name(struct netcf *ncf, const char *name) {
     struct netcf_if *nif = NULL;
-    char *name_dup = NULL;
     MIB_IFTABLE *intfTable = NULL;
     MIB_IFTABLE *intfTableDup = NULL;
     DWORD ret = 0;
@@ -100,9 +127,12 @@ struct netcf_if *w32_lookup_by_name(struct netcf *ncf, const char *name) {
 	    intfRow->dwIndex = intfTableDup->table[i].dwIndex;
 	    if (( ret = GetIfEntry(intfRow)) == NO_ERROR) {
 		/* TODO: Make sure NAME exist and is not a slave */
-		if ((intfRow->wszName != NULL) && (intfRow->wszName == name)) {
-		    name_dup = strdup(intfRow->wszName);
+		char name_dup[1024];
+		WideCharToMultiByte(CP_UTF8, 0, intfRow->wszName, -1, name_dup,
+				    sizeof(name_dup), NULL, NULL);
+		if (strcmp(name_dup,name) == 0) {
 		    nif = make_netcf_if(ncf, name_dup);
+		    return nif;
 		}
 	    }
 	}
@@ -113,20 +143,19 @@ struct netcf_if *w32_lookup_by_name(struct netcf *ncf, const char *name) {
 
 const char *w32_mac_string(struct netcf_if *nif) {
     struct netcf *ncf = nif->ncf;
-    const char *mac;
-    char *path = NULL;
-    
-    /* TODO: lookup mac string by adapter name */
-    if (mac != NULL) {
-	if (nif->mac == NULL || STRNEQ(nif->mac, mac)) {
-	    free(nif->mac);
-	    nif->mac = strdup(mac);
-	    if (nif->mac == NULL) {
-		return nif->mac;
-	    }
-	} else {
-	    free(nif->mac);
-	}
+    static BYTE macBuf[6];
+    MIB_IFROW *row, *tmpIf;
+
+    memset(macBuf, 0, sizeof(macBuf));
+
+    /* clear mac */
+    nif->mac = NULL;
+    if (nif->mac == NULL) {
+	free(nif->mac);
+	row = w32_intf_row(tmpIf, nif->name);
+	memcpy(macBuf, row->bPhysAddr, row->dwPhysAddrLen);
+	nif->mac = strdup((char *)macBuf);
+	free(nif->mac);
     }
     return nif->mac;
 }

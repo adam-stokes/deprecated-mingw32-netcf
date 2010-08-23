@@ -24,6 +24,7 @@
 
 void displayAdapters(PIP_ADAPTER_INFO pAdapter) {
   while(pAdapter) {
+      printf("name: %s\n", pAdapter->AdapterName);
     printf("IP Address: %s\n", pAdapter->IpAddressList.IpAddress.String);
     printf("Subnet: %s\n", pAdapter->IpAddressList.IpMask.String);
     if(pAdapter->DhcpEnabled) {

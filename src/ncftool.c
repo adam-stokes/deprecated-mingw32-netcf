@@ -146,7 +146,6 @@ static int cmd_list(const struct command *cmd) {
     if (opt_present(cmd, "all")) {
         flags = NETCF_IFACE_ACTIVE | NETCF_IFACE_INACTIVE;
     }
-
     nint = ncf_num_of_interfaces(ncf, flags);
     if (nint < 0)
         return CMD_RES_ERR;

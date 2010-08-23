@@ -1188,8 +1188,6 @@ const char *drv_mac_string(struct netcf_if *nif) {
 #ifdef HAVE_LIBAUGEAS
     r = aug_get_mac(ncf, nif->name, &mac);
     ERR_THROW(r < 0, ncf, EOTHER, "could not lookup MAC of %s", nif->name);
-#elif WIN32
-    goto error;
 #endif
 
     if (mac != NULL) {

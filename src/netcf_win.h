@@ -43,4 +43,5 @@ struct netcf_if *w32_lookup_by_name(struct netcf *ncf, const char *name);
 const char *w32_mac_string(struct netcf_if *nif);
 
 MIB_IFTABLE *w32_intf_table(MIB_IFTABLE *intfTable);
+MIB_IFROW *w32_intf_row(MIB_IFROW *intfRow, const char *name);
 #endif /* NETCF_WIN_H */
