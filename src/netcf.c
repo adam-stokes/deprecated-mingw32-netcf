@@ -202,6 +202,9 @@ const char *ncf_if_name(struct netcf_if *nif) {
 
 const char *ncf_if_mac_string(struct netcf_if *nif) {
     API_ENTRY(nif->ncf);
+#ifdef WIN32
+    return w32_mac_string(nif);
+#endif
     return drv_mac_string(nif);
 }
 
