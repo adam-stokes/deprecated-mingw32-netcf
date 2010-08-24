@@ -202,6 +202,9 @@ const char *ncf_if_name(struct netcf_if *nif) {
 
 const char *ncf_if_mac_string(struct netcf_if *nif) {
     API_ENTRY(nif->ncf);
+#ifdef WIN32
+    return w32_mac_string(nif);
+#endif
     return drv_mac_string(nif);
 }
 
@@ -215,6 +218,9 @@ int ncf_if_undefine(struct netcf_if *nif) {
 int ncf_if_up(struct netcf_if *nif) {
     /* I'm a bit concerned that this assumes nif (and nif->ncf) is non-NULL) */
     API_ENTRY(nif->ncf);
+#ifdef WIN32
+    return w32_if_up(nif);
+#endif
     return drv_if_up(nif);
 }
 
@@ -222,6 +228,9 @@ int ncf_if_up(struct netcf_if *nif) {
 int ncf_if_down(struct netcf_if *nif) {
     /* I'm a bit concerned that this assumes nif (and nif->ncf) is non-NULL) */
     API_ENTRY(nif->ncf);
+#ifdef WIN32
+    return w32_if_down(nif);
+#endif
     return drv_if_down(nif);
 }
 

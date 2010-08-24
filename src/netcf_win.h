@@ -23,25 +23,36 @@
 #ifndef NETCF_WIN_H
 #define NETCF_WIN_H
 
-#include "netcf.h"
+#ifndef WINVER
+#define WINVER 0x0501
+#endif
+
 #include <windows.h>
+#include <winsock.h>
+#include <winsock2.h>
 #include <iphlpapi.h>
+#include "netcf.h"
+
+
+PMIB_IFTABLE _get_if_table(PMIB_IFTABLE intfTable);
+
+PIP_ADAPTER_ADDRESSES _get_ip_adapter_info(PIP_ADAPTER_ADDRESSES addrList);
 
 int w32_num_of_interfaces(struct netcf *ncf, unsigned int flags);
-
-int w32_list_interface_ids(struct netcf *ncf, 
-			   int maxnames, 
-			   char **names, 
-			   unsigned int flags);
-
+int w32_list_interface_ids(struct netcf *ncf, int maxnames, 
+			   char **names, unsigned int flags,
+			   const char *id_attr);
+			   
 int w32_list_interfaces(struct netcf *ncf,
 			int maxnames, char **names,
 			unsigned int flags);
 
-struct netcf_if *w32_lookup_by_name(struct netcf *ncf, const char *name);
+struct netcf_if *w32_lookup_by_name(struct netcf *ncf,
+				    const char *name);
 
 const char *w32_mac_string(struct netcf_if *nif);
 
-MIB_IFTABLE *w32_intf_table(MIB_IFTABLE *intfTable);
-MIB_IFROW *w32_intf_row(MIB_IFROW *intfRow, const char *name);
+int w32_if_down(struct netcf_if *nif);
+int w32_if_up(struct netcf_if *nif);
+
 #endif /* NETCF_WIN_H */
