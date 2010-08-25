@@ -33,9 +33,7 @@
 #include <iphlpapi.h>
 #include "netcf.h"
 
-
 PMIB_IFTABLE _get_if_table(PMIB_IFTABLE intfTable);
-
 PIP_ADAPTER_ADDRESSES _get_ip_adapter_info(PIP_ADAPTER_ADDRESSES addrList);
 
 int w32_num_of_interfaces(struct netcf *ncf, unsigned int flags);
