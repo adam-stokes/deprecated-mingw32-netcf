@@ -262,6 +262,16 @@ int ncf_if_status(struct netcf_if *nif, unsigned int *flags) {
     return drv_if_status(nif, flags);
 }
 
+#ifdef WIN32
+/* Show ip addresses of active interfaces
+ * Returns 0 on success, -1 on failure
+ */
+int ncf_if_ipaddresses(struct netcf_if *nif) {
+    API_ENTRY(nif->ncf);
+    return w32_if_ipaddresses(nif);
+}
+#endif
+
 /* Release any resources used by this NETCF_IF; the pointer is invalid
  * after this call
  */

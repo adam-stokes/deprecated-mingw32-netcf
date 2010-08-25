@@ -139,7 +139,7 @@ const char *w32_mac_string(struct netcf_if *nif) {
        	if (strcmp(wName,nif->name) == 0) {
 	    if ((int)adapterp->PhysicalAddressLength > 6)
 		continue; /* just want ethernet for now */
-	    sprintf(mac, "%02X-%02X-%02X-%02X-%02X-%02X",
+	    sprintf(mac, "%02X:%02X:%02X:%02X:%02X:%02X",
 		    adapterp->PhysicalAddress[0],
 		    adapterp->PhysicalAddress[1],
 		    adapterp->PhysicalAddress[2],
@@ -205,4 +205,50 @@ int w32_if_up(struct netcf_if *nif) {
     }
  done:
     return 0;
+}
+
+int w32_if_ipaddresses(struct netcf_if *nif) {
+    PIP_ADAPTER_ADDRESSES addrList = NULL;
+    PIP_ADAPTER_ADDRESSES adapterp = NULL;
+    PMIB_IPADDRTABLE ipAddrTable;
+    IN_ADDR ipAddr;
+    DWORD r = 0;
+    ULONG bufferLength = 0;
+    int i;
+    unsigned long ip_address_buf = 0;
+
+    ipAddrTable = (PMIB_IPADDRTABLE) malloc(sizeof(MIB_IPADDRTABLE));
+    bufferLength = sizeof(MIB_IPADDRTABLE);
+    if((r = GetIpAddrTable(ipAddrTable, &bufferLength, FALSE)) == ERROR_INSUFFICIENT_BUFFER) {
+	FREE(ipAddrTable);
+	ipAddrTable = (PMIB_IPADDRTABLE) MALLOC(bufferLength);
+    }
+
+    adapterp = _get_ip_adapter_info(addrList);
+    if (adapterp != NULL) {
+	while(adapterp) {
+	    if (adapterp->IfType == IF_TYPE_SOFTWARE_LOOPBACK)
+		continue;
+	    if (adapterp->OperStatus != 1)
+		continue;
+
+	    /* pull ip addresses from interface */
+	    for (i = 0; i<ipAddrTable->dwNumEntries; i++) {
+		if (ipAddrTable->table[i].dwIndex == adapterp->IfIndex) {
+		    char wName[8192];
+		    WideCharToMultiByte(CP_UTF8, 0, adapterp->FriendlyName,
+					-1, wName, sizeof(wName), NULL, NULL);
+		    if (strcmp(wName,nif->name) == 0) {
+			ipAddr.S_un.S_addr = (unsigned long) ipAddrTable->table[i].dwAddr;
+			/* TODO: return ip address in some form */
+			return 0;
+		    }
+		}
+	    }
+	    adapterp = adapterp->Next;
+	}
+    }
+    FREE(ipAddrTable);
+    FREE(addrList);
+    return -1;
 }

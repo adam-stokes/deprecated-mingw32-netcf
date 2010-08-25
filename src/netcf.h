@@ -168,6 +168,11 @@ char *ncf_if_xml_state(struct netcf_if *);
  */
 int ncf_if_status(struct netcf_if *nif, unsigned int *flags);
 
+/* List ip addresses for each active interface
+ * Returns 0 on success, -1 on failure
+ */
+int ncf_if_ipaddresses(struct netcf_if *nif);
+
 /* Release any resources used by this NETCF_IF; the pointer is invalid
  * after this call
  */

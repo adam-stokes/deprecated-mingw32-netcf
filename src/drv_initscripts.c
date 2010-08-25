@@ -1096,8 +1096,8 @@ struct netcf_if *drv_define(struct netcf *ncf, const char *xml_str) {
 
 int drv_undefine(struct netcf_if *nif) {
     struct netcf *ncf = nif->ncf;
-    int r;
 #ifdef HAVE_LIBAUGEAS
+    int r;
     struct augeas *aug = NULL;
 
     aug = get_augeas(ncf);

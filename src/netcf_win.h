@@ -53,4 +53,7 @@ const char *w32_mac_string(struct netcf_if *nif);
 int w32_if_down(struct netcf_if *nif);
 int w32_if_up(struct netcf_if *nif);
 
+/* Reports ip addresses */
+int w32_if_ipaddresses(struct netcf_if *nif);
+
 #endif /* NETCF_WIN_H */
