@@ -30,6 +30,7 @@
 #include <windows.h>
 #include <winsock.h>
 #include <winsock2.h>
+#include <ws2tcpip.h>
 #include <iphlpapi.h>
 #include "netcf.h"
 
@@ -55,5 +56,13 @@ int w32_if_up(struct netcf_if *nif);
 
 /* Reports ip addresses */
 int w32_if_ipaddresses(struct netcf_if *nif);
+/* add ip address to device */
+int w32_add_ip_address(struct netcf_if *nif, const char *ipAddr);
+/* remove ip address from device */
+int w32_rm_ip_address(struct netcf_if *nif);
+/* add dns server to device */
+int w32_add_dns_server(struct netcf_if *nif, const char *dnsAddr);
+/* rm dns server from device */
+int w32_rm_dns_server(struct netcf_if *nif);
 
 #endif /* NETCF_WIN_H */

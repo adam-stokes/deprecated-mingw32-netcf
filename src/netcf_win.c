@@ -98,7 +98,7 @@ int w32_num_of_interfaces(struct netcf *ncf, unsigned int flags ATTRIBUTE_UNUSED
 }
 
 
-struct netcf_if *w32_lookup_by_name(struct netcf *ncf, const char *name) {
+struct netcf_if *w32_lookup_by_name(struct netcf *ncf) {
     struct netcf_if *nif = NULL;
     char *name_dup;
     unsigned int nint = 0;
@@ -111,7 +111,7 @@ struct netcf_if *w32_lookup_by_name(struct netcf *ncf, const char *name) {
 		char wName[8192];
 		WideCharToMultiByte(CP_UTF8, 0, adapterp->FriendlyName,
 				    -1, wName, sizeof(wName), NULL, NULL);
-		if (strcmp(wName, name) == 0) {
+		if (strcmp(wName, nif->name) == 0) {
 		    name_dup = strdup(wName);
 		    nif = make_netcf_if(ncf, name_dup);
 		    goto done;
@@ -207,7 +207,7 @@ int w32_if_up(struct netcf_if *nif) {
     return 0;
 }
 
-int w32_if_ipaddresses(struct netcf_if *nif) {
+int w32_if_ipaddresses(struct netcf_if *nif, const char *ipBuf) {
     PIP_ADAPTER_ADDRESSES addrList = NULL;
     PIP_ADAPTER_ADDRESSES adapterp = NULL;
     PMIB_IPADDRTABLE ipAddrTable;
@@ -215,7 +215,6 @@ int w32_if_ipaddresses(struct netcf_if *nif) {
     DWORD r = 0;
     ULONG bufferLength = 0;
     int i;
-    unsigned long ip_address_buf = 0;
 
     ipAddrTable = (PMIB_IPADDRTABLE) malloc(sizeof(MIB_IPADDRTABLE));
     bufferLength = sizeof(MIB_IPADDRTABLE);
@@ -227,8 +226,6 @@ int w32_if_ipaddresses(struct netcf_if *nif) {
     adapterp = _get_ip_adapter_info(addrList);
     if (adapterp != NULL) {
 	while(adapterp) {
-	    if (adapterp->IfType == IF_TYPE_SOFTWARE_LOOPBACK)
-		continue;
 	    if (adapterp->OperStatus != 1)
 		continue;
 
@@ -240,7 +237,7 @@ int w32_if_ipaddresses(struct netcf_if *nif) {
 					-1, wName, sizeof(wName), NULL, NULL);
 		    if (strcmp(wName,nif->name) == 0) {
 			ipAddr.S_un.S_addr = (unsigned long) ipAddrTable->table[i].dwAddr;
-			/* TODO: return ip address in some form */
+			sprintf(ipBuf,"%d",ntoa(ipAddr);
 			return 0;
 		    }
 		}
@@ -251,4 +248,68 @@ int w32_if_ipaddresses(struct netcf_if *nif) {
     FREE(ipAddrTable);
     FREE(addrList);
     return -1;
+    }
+}
+
+int w32_add_ip_address(struct netcf_if *nif, UINT *ipAddr, UINT *netmask) {
+    IN_ADDR addr;
+    PMIB_IPADDRTABLE ipAddrTable = NULL;
+    PMIB_IPADDRTABLE ipAddrTableDup = NULL;
+    ULONG bufferLength = 0;
+    DWORD r;
+    DWORD ifIndex;
+    int i;
+
+    /* ipv4 addr/subnetmask */
+    UINT IPAddress;
+    UINT IPMask;
+
+    /* handles to IP returned */
+    ULONG NTEContext = 0;
+    ULONG NTEInstance = 0;
+    
+    if ((IPAddress = inet_addr(ipAddr)) == INADDR_NONE)
+	return -1;
+
+    if ((IPMask = inet_addr(netmask)) == INADDR_NONE)
+	return -1;
+
+    ipAddrTable = (PMIB_IPADDRTABLE) MALLOC(sizeof(PIB_IPADDRTABLE));
+    bufferLength = sizeof(MIB_IPADDRTABLE);
+    if((r = GetIpAddrTable(ipAddrTable, &bufferLength, FALSE)) == ERROR_INSUFFICIENT_BUFFER) {
+	FREE(ipAddrTable);
+	ipAddrTable = (PMIB_IPADDRTABLE) MALLOC(bufferLength);
+    }    
+
+    ipAddrTableDup = _get_ip_addr_table(ipAddrTable);
+    if (ipAddrTableDup != NULL) {
+	for(i=0;i<ipAddrTableDup->dwNumEntries;i++) {
+	    ifIndex = ipAddrTableDup->table[i].dwIndex;
+	    char wName[8192];
+	    WideCharToMultiByte(CP_UTF8, 0, adapterp->FriendlyName,
+				-1, wName, sizeof(wName), NULL, NULL);
+	    if (strcmp(wName,nif->name) == 0) {
+		if ((r = AddIPAddress(IPAddress, IPMask, ifIndex,
+				      &NTEContext, &NTEInstance)) == NO_ERROR) {
+		    return 0;
+		}
+	    }
+	}
+    }
+    FREE(ipAddrTable);
+    return -1;
+}
+
+
+int w32_rm_ip_address(struct netcf_if *nif, const char *name) {
+    return 0;
+}
+
+int w32_add_dns_server(struct netcf_if *nif, const char *dnsAddr,
+		       const char *name) {
+    return 0;
+}
+
+int w32_rm_dns_server(struct netcf_if *nif, const char *name) {
+    return 0;
 }
