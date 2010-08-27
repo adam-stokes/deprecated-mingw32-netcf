@@ -283,7 +283,7 @@ int w32_add_ip_address(struct netcf_if *nif, UINT *ipAddr, UINT *netmask) {
 
     /* handles to IP returned */
     ULONG NTEContext = 0;
-    ULONG NTEInstance = 0;
+0    ULONG NTEInstance = 0;
     
     if ((IPAddress = inet_addr(ipAddr)) == INADDR_NONE)
 	return -1;
@@ -319,6 +319,7 @@ int w32_rm_ip_address(struct netcf_if *nif, ULONG NTEContext) {
     return -1;
 }
 
+/* NOT IMPLEMENTED
 int w32_add_dns_server(struct netcf_if *nif, const char *dnsAddr) {
     return 0;
 }
@@ -326,3 +327,4 @@ int w32_add_dns_server(struct netcf_if *nif, const char *dnsAddr) {
 int w32_rm_dns_server(struct netcf_if *nif) {
     return 0;
 }
+*/
