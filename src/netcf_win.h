@@ -32,6 +32,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
+#include <windns.h>
 #include "netcf.h"
 
 /* structure return of interface table */
@@ -39,6 +40,8 @@ PMIB_IFTABLE _get_if_table(PMIB_IFTABLE intfTable);
 
 /* structure return of adapter info */
 PIP_ADAPTER_ADDRESSES _get_ip_adapter_info(PIP_ADAPTER_ADDRESSES addrList);
+
+PMIB_IPADDRTABLE _get_ip_addr_table(PMIB_IPADDRTABLE ipAddrTable);
 
 /* return num of interfaces enabled */
 int w32_num_of_interfaces(struct netcf *ncf, unsigned int flags);
@@ -67,11 +70,12 @@ int w32_if_down(struct netcf_if *nif);
 int w32_if_up(struct netcf_if *nif);
 
 /* Reports ip addresses */
-int w32_if_ipaddresses(struct netcf_if *nif);
+int w32_if_ipaddresses(struct netcf_if *nif, const char *ipBuf);
 /* add ip address to device */
-int w32_add_ip_address(struct netcf_if *nif, const char *ipAddr);
+int w32_add_ip_address(struct netcf_if *nif, char *ipAddr,
+		       char *netmask);
 /* remove ip address from device */
-int w32_rm_ip_address(struct netcf_if *nif);
+int w32_rm_ip_address(struct netcf_if *nif, ULONG NTEContext);
 /* add dns server to device */
 int w32_add_dns_server(struct netcf_if *nif, ULONG NTEContext);
 /* rm dns server from device */

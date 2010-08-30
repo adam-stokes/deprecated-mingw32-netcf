@@ -19,7 +19,7 @@ EXTRA_DIST = netcf_public.syms \
 DRIVER_SOURCES = dutil.h dutil.c netcf.c drv_initscripts.c
 
 if PLATFORM_WIN32
-WIN32LIB= -liphlpapi
+WIN32LIB= -liphlpapi -ldnsapi
 DRIVER_SOURCES += netcf_win.h netcf_win.c
 else
 DRIVER_SOURCES += dutil_linux.c

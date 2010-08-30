@@ -267,8 +267,9 @@ int ncf_if_status(struct netcf_if *nif, unsigned int *flags) {
  * Returns 0 on success, -1 on failure
  */
 int ncf_if_ipaddresses(struct netcf_if *nif) {
+    const char *ipBuf;
     API_ENTRY(nif->ncf);
-    return w32_if_ipaddresses(nif);
+    return w32_if_ipaddresses(nif, ipBuf);
 }
 #endif
 

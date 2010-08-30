@@ -25,9 +25,15 @@ PLATFORM_WIN32="no"
 case "$host" in
 	*-*-mingw*)
 		PLATFORM_WIN32="yes"
+		MINGW_EXTRA_LDFLAGS="-no-undefined"
+	;;
+	*-*-cygwin*)
+		MINGW_EXTRA_LDFLAGS="-no-undefined"
+	;;
+	*-*-linux*)
+		MINGW_EXTRA_LDFLAGS="-no-undefined"
 	;;
 	*)
-		MINGW_EXTRA_LDFLAGS="-no-undefined"
 	;;
 esac
 AC_MSG_RESULT([$PLATFORM_WIN32])

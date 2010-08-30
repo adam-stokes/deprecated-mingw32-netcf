@@ -14,23 +14,22 @@
 #define FREE(x) HeapFree(GetProcessHeap(), 0, (x))
 
 PMIB_IPADDRTABLE _get_ip_addr_table(PMIB_IPADDRTABLE ipAddrTable) {
-    IN_ADDR addr;
     DWORD r = 0;
     DWORD buf = 0;
 
-    addr = (PMIB_IPADDRTABLE) MALLOC(sizeof (MIB_IPADDRTABLE));
-    if (GetIpAddrTable(addr, &buf, 0) == ERROR_INSUFFICIENT_BUFFER) {
-	FREE(addr);
-	addr = (PMIB_IPADDRTABLE) MALLOC(buf);
-	if (addr == NULL)
+    ipAddrTable = (PMIB_IPADDRTABLE) MALLOC(sizeof (MIB_IPADDRTABLE));
+    if (GetIpAddrTable(ipAddrTable, &buf, 0) == ERROR_INSUFFICIENT_BUFFER) {
+	FREE(ipAddrTable);
+	ipAddrTable = (PMIB_IPADDRTABLE) MALLOC(buf);
+	if (ipAddrTable == NULL)
 	    goto error;
     }
 
-    if((r = GetIpAddrTable(addr, &buf, 0)) == NO_ERROR)
-	return addr;
+    if((r = GetIpAddrTable(ipAddrTable, &buf, 0)) == NO_ERROR)
+	return ipAddrTable;
 
  error:
-    FREE(addr);
+    FREE(ipAddrTable);
     return ipAddrTable;
 }
 
@@ -119,7 +118,7 @@ int w32_num_of_interfaces(struct netcf *ncf, unsigned int flags ATTRIBUTE_UNUSED
 }
 
 
-struct netcf_if *w32_lookup_by_name(struct netcf *ncf) {
+struct netcf_if *w32_lookup_by_name(struct netcf *ncf, const char *name) {
     struct netcf_if *nif = NULL;
     char *name_dup;
     unsigned int nint = 0;
@@ -132,7 +131,7 @@ struct netcf_if *w32_lookup_by_name(struct netcf *ncf) {
 		char wName[8192];
 		WideCharToMultiByte(CP_UTF8, 0, adapterp->FriendlyName,
 				    -1, wName, sizeof(wName), NULL, NULL);
-		if (strcmp(wName, nif->name) == 0) {
+		if (strcmp(wName, name) == 0) {
 		    name_dup = strdup(wName);
 		    nif = make_netcf_if(ncf, name_dup);
 		    goto done;
@@ -254,22 +253,24 @@ int w32_if_ipaddresses(struct netcf_if *nif, const char *ipBuf) {
 					-1, wName, sizeof(wName), NULL, NULL);
 		    if (strcmp(wName,nif->name) == 0) {
 			ipAddr.S_un.S_addr = (unsigned long) ipAddrTableDup->table[i].dwAddr;
-			sprintf(ipBuf,"%d",ntoa(ipAddr);
+			sprintf(ipBuf,"%d",inet_ntoa(ipAddr));
 			return 0;
 		    }
 		}
 	    }
 	    adapterp = adapterp->Next;
 	}
+
     }
     FREE(ipAddrTable);
     FREE(addrList);
     return -1;
-    }
 }
 
-int w32_add_ip_address(struct netcf_if *nif, UINT *ipAddr, UINT *netmask) {
+int w32_add_ip_address(struct netcf_if *nif, char *ipAddr, char *netmask) {
     IN_ADDR addr;
+    PIP_ADAPTER_ADDRESSES addrList = NULL;
+    PIP_ADAPTER_ADDRESSES adapterp = NULL;
     PMIB_IPADDRTABLE ipAddrTable = NULL;
     PMIB_IPADDRTABLE ipAddrTableDup = NULL;
     ULONG bufferLength = 0;
@@ -283,7 +284,7 @@ int w32_add_ip_address(struct netcf_if *nif, UINT *ipAddr, UINT *netmask) {
 
     /* handles to IP returned */
     ULONG NTEContext = 0;
-0    ULONG NTEInstance = 0;
+    ULONG NTEInstance = 0;
     
     if ((IPAddress = inet_addr(ipAddr)) == INADDR_NONE)
 	return -1;
@@ -312,19 +313,33 @@ int w32_add_ip_address(struct netcf_if *nif, UINT *ipAddr, UINT *netmask) {
 }
 
 
+/* needs further testing
 int w32_rm_ip_address(struct netcf_if *nif, ULONG NTEContext) {
     DWORD r = 0;
     if ((r = DeleteIpAddress(NTEConext)) == NO_ERROR)
 	return 0;
     return -1;
 }
-
-/* NOT IMPLEMENTED
-int w32_add_dns_server(struct netcf_if *nif, const char *dnsAddr) {
-    return 0;
-}
-
-int w32_rm_dns_server(struct netcf_if *nif) {
-    return 0;
-}
 */
+
+int w32_list_dns_server(struct netcf_if *nif, char *ip_str) {
+    char bufferLength[1024];
+    IP4_ARRAY *ips = (IP4_ARRAY*) bufferLength;
+    DWORD len = sizeof(bufferLength);
+    DNS_STATUS status;
+
+    status = DnsQueryConfig(DnsConfigDnsServerList, FALSE,
+			    NULL, NULL, ips, &len);
+    if (status == 0) {
+	DWORD i;
+	for (i = 0; i < ips->AddrCount; i++) {
+	    DWORD ip = ips->AddrArray[i];
+	    snprintf(ip_str, sizeof(ip_str), 
+		     "%d.%d.%d.%d", (ip >> 0) & 255, (ip >> 8) & 255,
+		     (ip >> 16) & 255, (ip >> 24) & 255);
+	}
+    } else {
+	return -1;
+    }
+    return 0;
+}
