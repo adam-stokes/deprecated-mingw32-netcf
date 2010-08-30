@@ -32,6 +32,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
+#include <windns.h>
 #include "netcf.h"
 
 /* structure return of interface table */

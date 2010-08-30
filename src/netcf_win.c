@@ -328,3 +328,24 @@ int w32_rm_dns_server(struct netcf_if *nif) {
     return 0;
 }
 */
+
+int w32_list_dns_server(struct netcf_if *nif, char *ip_str) {
+    char bufferLength[1024];
+    IP4_ARRAY *ips = (IP4_ARRAY*) bufferLength;
+    DWORD len = sizeof(bufferLength);
+    DNS_STATUS status;
+
+    status = DnsQueryConfig(DnsConfigDnsServerList, FALSE,
+			    NULL, NULL, ips, &len);
+    if (status == 0) {
+	DWORD i;
+	for (i = 0; i < ips->AddrCount; i++) {
+	    DWORD ip = ips->AddrArray[i]) {
+	    snprintf(ip_str, size_of(ip_str), 
+		     "%d.%d.%d.%d", (ip >> 0) & 255, (ip >> 8) & 255,
+		     (ip >> 16) & 255, (ip >> 24) & 255);
+	}
+    } else {
+	return -1;
+    return 0;
+}
