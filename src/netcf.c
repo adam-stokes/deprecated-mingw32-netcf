@@ -119,10 +119,9 @@ int ncf_close(struct netcf *ncf) {
 
     ERR_COND_BAIL(ncf->ref > 1, ncf, EINUSE);
 
-#ifndef WIN32
     *ncf = NULL;
     ncf->driver = NULL;
-#endif
+
     drv_close(ncf);
     unref(ncf, netcf);
     return 0;
@@ -138,9 +137,6 @@ int ncf_close(struct netcf *ncf) {
  */
 int ncf_num_of_interfaces(struct netcf *ncf, unsigned int flags) {
     API_ENTRY(ncf);
-#ifdef WIN32
-    return w32_num_of_interfaces(ncf, flags);
-#endif
     return drv_num_of_interfaces(ncf, flags);
 }
 
@@ -149,11 +145,7 @@ int ncf_list_interfaces(struct netcf *ncf, int maxnames, char **names, unsigned 
 
     API_ENTRY(ncf);
     MEMZERO(names, maxnames);
-#ifdef WIN32
-    result = w32_list_interfaces(ncf, maxnames, names, flags);
-#else
     result = drv_list_interfaces(ncf, maxnames, names, flags);
-#endif
     if (result < 0)
         for (int i=0; i < maxnames; i++)
             FREE(names[i]);
@@ -162,9 +154,6 @@ int ncf_list_interfaces(struct netcf *ncf, int maxnames, char **names, unsigned 
 
 struct netcf_if * ncf_lookup_by_name(struct netcf *ncf, const char *name) {
     API_ENTRY(ncf);
-#ifdef WIN32
-    return w32_lookup_by_name(ncf, name);
-#endif
     return drv_lookup_by_name(ncf, name);
 }
 
@@ -193,9 +182,6 @@ const char *ncf_if_name(struct netcf_if *nif) {
 
 const char *ncf_if_mac_string(struct netcf_if *nif) {
     API_ENTRY(nif->ncf);
-#ifdef WIN32
-    return w32_mac_string(nif);
-#endif
     return drv_mac_string(nif);
 }
 
@@ -209,9 +195,6 @@ int ncf_if_undefine(struct netcf_if *nif) {
 int ncf_if_up(struct netcf_if *nif) {
     /* I'm a bit concerned that this assumes nif (and nif->ncf) is non-NULL) */
     API_ENTRY(nif->ncf);
-#ifdef WIN32
-    return w32_if_up(nif);
-#endif
     return drv_if_up(nif);
 }
 
@@ -219,13 +202,9 @@ int ncf_if_up(struct netcf_if *nif) {
 int ncf_if_down(struct netcf_if *nif) {
     /* I'm a bit concerned that this assumes nif (and nif->ncf) is non-NULL) */
     API_ENTRY(nif->ncf);
-#ifdef WIN32
-    return w32_if_down(nif);
-#endif
     return drv_if_down(nif);
 }
 
-#ifndef WIN32
 /* Produce an XML description for the interface, in the same format that
  * NCF_DEFINE expects
  */
@@ -243,7 +222,6 @@ char *ncf_if_xml_state(struct netcf_if *nif) {
     API_ENTRY(nif->ncf);
     return drv_xml_state(nif);
 }
-#endif
 
 /* Report various status info about the interface as bits in
  * "flags". Returns 0 on success, -1 on failure
@@ -252,17 +230,6 @@ int ncf_if_status(struct netcf_if *nif, unsigned int *flags) {
     API_ENTRY(nif->ncf);
     return drv_if_status(nif, flags);
 }
-
-#ifdef WIN32
-/* Show ip addresses of active interfaces
- * Returns 0 on success, -1 on failure
- */
-int ncf_if_ipaddresses(struct netcf_if *nif) {
-    const char *ipBuf;
-    API_ENTRY(nif->ncf);
-    return w32_if_ipaddresses(nif, ipBuf);
-}
-#endif
 
 /* Release any resources used by this NETCF_IF; the pointer is invalid
  * after this call
@@ -286,7 +253,6 @@ int ncf_error(struct netcf *ncf, const char **errmsg, const char **details) {
     return errcode;
 }
 
-#ifdef HAVE_LIBAUGEAS
 /*
  * Test interface
  */
@@ -301,7 +267,6 @@ int ncf_put_aug(struct netcf *ncf, const char *aug_xml, char **ncf_xml) {
 
     return drv_put_aug(ncf, aug_xml, ncf_xml);
 }
-#endif /* LIBAUGEAS */
 
 /*
  * Internal helpers

@@ -25,9 +25,7 @@
 
 #include <libxml/relaxng.h>
 #include <libxslt/xsltInternals.h>
-#ifndef HAVE_LIBNL
 #include <netlink/netlink.h>
-#endif
 
 struct driver {
     struct augeas     *augeas;

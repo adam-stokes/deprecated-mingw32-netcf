@@ -44,41 +44,40 @@ PIP_ADAPTER_ADDRESSES _get_ip_adapter_info(PIP_ADAPTER_ADDRESSES addrList);
 PMIB_IPADDRTABLE _get_ip_addr_table(PMIB_IPADDRTABLE ipAddrTable);
 
 /* return num of interfaces enabled */
-int w32_num_of_interfaces(struct netcf *ncf, unsigned int flags);
+int drv_num_of_interfaces(struct netcf *ncf, unsigned int flags);
 
 /* helper for providing number of interfaces and associated names */
-int w32_list_interface_ids(struct netcf *ncf, int maxnames, 
+int drv_list_interface_ids(struct netcf *ncf, int maxnames, 
 			   char **names, unsigned int flags,
 			   const char *id_attr);
 			   
 /* list interface names */
-int w32_list_interfaces(struct netcf *ncf,
+int drv_list_interfaces(struct netcf *ncf,
 			int maxnames, char **names,
 			unsigned int flags);
 
 /* lookup interface by name */
-struct netcf_if *w32_lookup_by_name(struct netcf *ncf,
-				    const char *name);
+struct netcf_if *drv_lookup_by_name(struct netcf *ncf, const char *name);
 
 /* obtain hardware address of interface */
-const char *w32_mac_string(struct netcf_if *nif);
+const char *drv_mac_string(struct netcf_if *nif);
 
 /* bring interface down */
-int w32_if_down(struct netcf_if *nif);
+int drv_if_down(struct netcf_if *nif);
 
 /* bring interface up */
-int w32_if_up(struct netcf_if *nif);
+int drv_if_up(struct netcf_if *nif);
 
 /* Reports ip addresses */
-int w32_if_ipaddresses(struct netcf_if *nif, const char *ipBuf);
+int drv_if_ipaddresses(struct netcf_if *nif, const char *ipBuf);
 /* add ip address to device */
-int w32_add_ip_address(struct netcf_if *nif, char *ipAddr,
+int drv_add_ip_address(struct netcf_if *nif, char *ipAddr,
 		       char *netmask);
 /* remove ip address from device */
-int w32_rm_ip_address(struct netcf_if *nif, ULONG NTEContext);
+int drv_rm_ip_address(struct netcf_if *nif, ULONG NTEContext);
 /* add dns server to device */
-int w32_add_dns_server(struct netcf_if *nif, ULONG NTEContext);
+int drv_add_dns_server(struct netcf_if *nif, ULONG NTEContext);
 /* rm dns server from device */
-int w32_rm_dns_server(struct netcf_if *nif);
+int drv_rm_dns_server(struct netcf_if *nif);
 
 #endif /* NETCF_WIN_H */

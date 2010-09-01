@@ -22,11 +22,7 @@
 
 #include <config.h>
 #include <internal.h>
-
-#ifdef HAVE_LIBAUGEAS
 #include <augeas.h>
-#endif
-
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -38,9 +34,7 @@
 #include "ref.h"
 #include "list.h"
 #include "dutil.h"
-#ifndef WIN32
 #include "dutil_linux.h"
-#endif
 
 #include <libxml/parser.h>
 #include <libxml/relaxng.h>
@@ -168,9 +162,7 @@ static char *find_ifcfg_path_by_hwaddr(struct netcf *ncf, const char *mac) {
     int match = -1;
     for (int i=0; i < nhwaddr; i++) {
         const char *addr;
-#ifdef HAVE_LIBAUGEAS
         r = aug_get(aug, hwaddr[i], &addr);
-#endif
         ERR_COND_BAIL(r != 1, ncf, EOTHER);
         if (STRCASEEQ(addr, mac))
             match = i;
@@ -191,20 +183,16 @@ static char *find_ifcfg_path_by_hwaddr(struct netcf *ncf, const char *mac) {
  * interface by checking for an entry 'DEVICE=NAME'
  */
 static char *find_ifcfg_path_by_device(struct netcf *ncf, const char *name) {
-#ifdef HAVE_LIBAUGEAS
     struct augeas *aug = NULL;
-#endif
     int ndevs = 0;
     char **devs = NULL;
 
-#ifdef HAVE_LIBAUGEAS
     aug = get_augeas(ncf);
     ERR_BAIL(ncf);
 
     ndevs = aug_fmt_match(ncf, &devs, "%s[DEVICE = '%s']",
                           ifcfg_path, name);
     ERR_COND_BAIL(ndevs < 0, ncf, EOTHER);
-#endif
 
     if (ndevs == 0)
         return NULL;
@@ -222,7 +210,6 @@ static char *find_ifcfg_path_by_device(struct netcf *ncf, const char *name) {
     return NULL;
 }
 
-#ifndef WIN32
 /* Find the path to the ifcfg file that has the configuration for
  * the device NAME. The logic follows the need_config function
  * in /etc/sysconfig/network-scripts/network-functions
@@ -339,11 +326,9 @@ static int list_ifcfg_paths(struct netcf *ncf, char ***intf) {
     free_matches(ndevs, &devs);
     return -1;
 }
-#endif
 
 static int list_interfaces(struct netcf *ncf, char ***intf) {
     int nint = 0, result = 0;
-#ifdef HAVE_LIBAUGEAS
     struct augeas *aug = NULL;
 
     aug = get_augeas(ncf);
@@ -352,7 +337,6 @@ static int list_interfaces(struct netcf *ncf, char ***intf) {
     /* Look in augeas for all interfaces */
     nint = list_ifcfg_paths(ncf, intf);
     ERR_BAIL(ncf);
-#elif WIN32
     result = nint;
 
     /* Filter out the interfaces that are slaves/subordinate */
@@ -366,7 +350,6 @@ static int list_interfaces(struct netcf *ncf, char ***intf) {
             i += 1;
         }
     }
-#endif
     return result;
  error:
     free_matches(nint, intf);
@@ -505,13 +488,10 @@ int drv_init(struct netcf *ncf) {
 
     ncf->driver->ioctl_fd = -1;
 
-#ifdef HAVE_LIBAUGEAS
     r = add_augeas_xfm_table(ncf, &augeas_xfm_common);
     if (r < 0)
         goto error;
-#endif /* LIBAUGEAS */
 
-#ifndef WIN32
     // FIXME: Check for errors
     xsltInit();
     exsltStrRegister();
@@ -522,16 +502,13 @@ int drv_init(struct netcf *ncf) {
 
     bridge_physdevs(ncf);
     ERR_BAIL(ncf);
-#endif /* WIN32 */
     /* open a socket for interface ioctls */
     ncf->driver->ioctl_fd = init_ioctl_fd(ncf);
     if (ncf->driver->ioctl_fd < 0)
         goto error;
 
-#ifdef HAVE_LIBNL
     if (netlink_init(ncf) < 0)
         goto error;
-#endif /* LIBNL */
     return 0;
 
  error:
@@ -545,15 +522,11 @@ void drv_close(struct netcf *ncf) {
     xsltFreeStylesheet(ncf->driver->get);
     xsltFreeStylesheet(ncf->driver->put);
     xmlRelaxNGFree(ncf->driver->rng);
-#ifdef HAVE_LIBNL
     netlink_close(ncf);
-#endif /* LIBNL */
     if (ncf->driver->ioctl_fd >= 0)
         close(ncf->driver->ioctl_fd);
-#ifdef HAVE_LIBAUGEAS
     aug_close(ncf->driver->augeas);
     FREE(ncf->driver->augeas_xfm_tables);
-#endif /* LIBAUGEAS */
     FREE(ncf->driver);
 }
 
@@ -567,12 +540,10 @@ static int list_interface_ids(struct netcf *ncf,
                               const char *id_attr) {
     int nint = 0, nmatches = 0, nqualified = 0, result = 0, r;
     char **intf = NULL, **matches = NULL;
-#ifdef HAVE_LIBAUGEAS
     struct augeas *aug = NULL;
 
     aug = get_augeas(ncf);
     ERR_BAIL(ncf);
-#endif
     nint = list_interfaces(ncf, &intf);
     ERR_BAIL(ncf);
     if (!names) {
@@ -587,10 +558,8 @@ static int list_interface_ids(struct netcf *ncf,
             int is_qualified = ((flags & (NETCF_IFACE_ACTIVE|NETCF_IFACE_INACTIVE))
                                 == (NETCF_IFACE_ACTIVE|NETCF_IFACE_INACTIVE));
 
-#ifdef HAVE_LIBAUGEAS
             r = aug_get(aug, matches[nmatches-1], &name);
             ERR_COND_BAIL(r < 0, ncf, EOTHER);
-#endif /* LIBAUGEAS */
             if (!is_qualified) {
                 int is_active = if_is_active(ncf, name);
                 if ((is_active && (flags & NETCF_IFACE_ACTIVE))
@@ -631,7 +600,6 @@ struct netcf_if *drv_lookup_by_name(struct netcf *ncf, const char *name) {
     struct netcf_if *nif = NULL;
     char *pathx = NULL;
     char *name_dup = NULL;
-#ifdef HAVE_LIBAUGEAS
     struct augeas *aug;
 
     aug = get_augeas(ncf);
@@ -639,7 +607,6 @@ struct netcf_if *drv_lookup_by_name(struct netcf *ncf, const char *name) {
 
     pathx = find_ifcfg_path(ncf, name);
     ERR_BAIL(ncf);
-#endif /* LIBAUGEAS */
 
     if (pathx == NULL || is_slave(ncf, pathx))
         goto done;
@@ -659,7 +626,6 @@ struct netcf_if *drv_lookup_by_name(struct netcf *ncf, const char *name) {
     return nif;
 }
 
-#ifndef WIN32
 /* Get an XML desription of the interfaces (just paths, really) in INTF.
  * The format is a very simple representation of the Augeas tree (see
  * xml/augeas.rng)
@@ -839,7 +805,6 @@ char *drv_xml_state(struct netcf_if *nif) {
     result = 0;
     goto done;
 }
-#endif /* WIN32 */
 
 /* Report various status info about the interface as bits in
  * "flags". Returns 0 on success, -1 on failure
@@ -911,7 +876,6 @@ static bool is_bond(struct netcf *ncf, const char *name) {
     return nmatches > 0;
 }
 
-#ifndef WIN32
 /* The device NAME is a bridge if it has an entry TYPE=Bridge */
 static bool is_bridge(struct netcf *ncf, const char *name) {
     int nmatches = 0;
@@ -947,14 +911,12 @@ static int bridge_slaves(struct netcf *ncf, const char *name, char ***slaves) {
     free_matches(nslaves, slaves);
     return -1;
 }
-#endif /* WIN32 */
 
 /* For an interface NAME, remove the ifcfg-* files for that interface and
  * all its slaves. */
 static void rm_interface(struct netcf *ncf, const char *name) {
     int r;
     char *path = NULL;
-#ifdef HAVE_LIBAUGEAS
     struct augeas *aug = NULL;
 
     aug = get_augeas(ncf);
@@ -970,9 +932,7 @@ static void rm_interface(struct netcf *ncf, const char *name) {
 
     r = aug_rm(aug, path);
     ERR_COND_BAIL(r < 0, ncf, EOTHER);
-#elif WIN32
     goto error;
-#endif
  error:
     FREE(path);
 }
@@ -1009,7 +969,6 @@ static void rm_all_interfaces(struct netcf *ncf, xmlDocPtr ncf_xml) {
     xmlXPathFreeContext(context);
 }
 
-#ifndef WIN32
 /* Dig through interface NAME and all its subinterfaces for bonds
  * and either add aliases in modprobe.conf for it (ALIAS == true), or
  * remove such aliases (ALIAS == false)
@@ -1044,14 +1003,13 @@ static void bond_setup(struct netcf *ncf, const char *name, bool alias) {
     free_matches(nslaves, &slaves);
     return;
 }
-#endif
 
 struct netcf_if *drv_define(struct netcf *ncf, const char *xml_str) {
     xmlDocPtr ncf_xml = NULL, aug_xml = NULL;
     char *name = NULL;
     struct netcf_if *result = NULL;
     int r;
-#ifdef HAVE_LIBAUGEAS
+
     struct augeas *aug = get_augeas(ncf);
 
     ncf_xml = parse_xml(ncf, xml_str);
@@ -1081,7 +1039,6 @@ struct netcf_if *drv_define(struct netcf *ncf, const char *xml_str) {
         aug_print(aug, stderr, "/augeas//error");
     }
     ERR_THROW(r < 0, ncf, EOTHER, "aug_save failed");
-#endif /* LIBAUGEAS */
 
     result = make_netcf_if(ncf, name);
     ERR_BAIL(ncf);
@@ -1097,7 +1054,6 @@ struct netcf_if *drv_define(struct netcf *ncf, const char *xml_str) {
 
 int drv_undefine(struct netcf_if *nif) {
     struct netcf *ncf = nif->ncf;
-#ifdef HAVE_LIBAUGEAS
     int r;
     struct augeas *aug = NULL;
 
@@ -1106,14 +1062,13 @@ int drv_undefine(struct netcf_if *nif) {
 
     bond_setup(ncf, nif->name, false);
     ERR_BAIL(ncf);
-#endif
+
     rm_interface(ncf, nif->name);
     ERR_BAIL(ncf);
 
-#ifdef HAVE_LIBAUGEAS
     r = aug_save(aug);
     ERR_COND_BAIL(r < 0, ncf, EOTHER);
-#endif
+
     return 0;
  error:
     return -1;
@@ -1128,7 +1083,6 @@ int drv_lookup_by_mac_string(struct netcf *ncf, const char *mac,
     char **matches = NULL;
     int r;
     int result = -1;
-#ifdef HAVE_LIBAUGEAS
     struct augeas *aug = NULL;
 
     MEMZERO(ifaces, maxifaces);
@@ -1164,9 +1118,6 @@ int drv_lookup_by_mac_string(struct netcf *ncf, const char *mac,
         ERR_BAIL(ncf);
     }
     result = cnt;
-#elif WIN32
-    goto done;
-#endif
     goto done;
 
  error:
@@ -1186,10 +1137,8 @@ const char *drv_mac_string(struct netcf_if *nif) {
     char *path = NULL;
     int r;
 
-#ifdef HAVE_LIBAUGEAS
     r = aug_get_mac(ncf, nif->name, &mac);
     ERR_THROW(r < 0, ncf, EOTHER, "could not lookup MAC of %s", nif->name);
-#endif
 
     if (mac != NULL) {
         if (nif->mac == NULL || STRNEQ(nif->mac, mac)) {
@@ -1217,7 +1166,6 @@ int drv_if_up(struct netcf_if *nif) {
     int nslaves = 0;
     int result = -1;
 
-#ifdef HAVE_LIBAUGEAS
     if (is_bridge(ncf, nif->name)) {
         /* Bring up bridge slaves before the bridge */
         nslaves = bridge_slaves(ncf, nif->name, &slaves);
@@ -1230,9 +1178,6 @@ int drv_if_up(struct netcf_if *nif) {
     }
     run1(ncf, ifup, nif->name);
     ERR_BAIL(ncf);
-#elif WIN32
-    goto error;
-#endif
     result = 0;
  error:
     free_matches(nslaves, &slaves);
@@ -1246,7 +1191,6 @@ int drv_if_down(struct netcf_if *nif) {
     int nslaves = 0;
     int result = -1;
 
-#ifdef HAVE_LIBAUGEAS
     run1(ncf, ifdown, nif->name);
     ERR_BAIL(ncf);
     if (is_bridge(ncf, nif->name)) {
@@ -1259,16 +1203,12 @@ int drv_if_down(struct netcf_if *nif) {
             ERR_BAIL(ncf);
         }
     }
-#elif WIN32
-    goto error;
-#endif
     result = 0;
  error:
     free_matches(nslaves, &slaves);
     return result;
 }
 
-#ifdef HAVE_LIBAUGEAS
 /*
  * Test interface
  */
@@ -1282,7 +1222,6 @@ int drv_put_aug(struct netcf *ncf, const char *aug_xml, char **ncf_xml) {
     /* Use utility implementation */
     return dutil_put_aug(ncf, aug_xml, ncf_xml);
 }
-#endif
 
 /*
  * Local variables:

@@ -76,7 +76,7 @@ PIP_ADAPTER_ADDRESSES _get_ip_adapter_info(PIP_ADAPTER_ADDRESSES addrList) {
     FREE(addrList);
 }
     
-int w32_list_interface_ids(struct netcf *ncf ATTRIBUTE_UNUSED, 
+int drv_list_interface_ids(struct netcf *ncf ATTRIBUTE_UNUSED, 
 			   int maxnames ATTRIBUTE_UNUSED,
 			   char **names, unsigned int flags ATTRIBUTE_UNUSED,
 			   const char *id_attr ATTRIBUTE_UNUSED) {
@@ -100,7 +100,7 @@ int w32_list_interface_ids(struct netcf *ncf ATTRIBUTE_UNUSED,
     return -1;
 }
 
-int w32_list_interfaces(struct netcf *ncf,
+int drv_list_interfaces(struct netcf *ncf,
 		    int maxnames ATTRIBUTE_UNUSED, char **names,
 		    unsigned int flags ATTRIBUTE_UNUSED) {
     return w32_list_interface_ids(ncf, 0, names, 0, NULL);
@@ -112,7 +112,7 @@ int w32_num_of_interfaces(struct netcf *ncf, unsigned int flags ATTRIBUTE_UNUSED
 }
 
 
-struct netcf_if *w32_lookup_by_name(struct netcf *ncf, const char *name) {
+struct netcf_if *drv_lookup_by_name(struct netcf *ncf, const char *name) {
     struct netcf_if *nif = NULL;
     char *name_dup;
     unsigned int nint = 0;
@@ -138,7 +138,7 @@ struct netcf_if *w32_lookup_by_name(struct netcf *ncf, const char *name) {
 }
 
 
-const char *w32_mac_string(struct netcf_if *nif) {
+const char *drv_mac_string(struct netcf_if *nif) {
     // struct netcf *ncf = nif->ncf;
     char mac[256];
 
@@ -168,7 +168,7 @@ const char *w32_mac_string(struct netcf_if *nif) {
     return nif->mac;
 }
 
-int w32_if_down(struct netcf_if *nif) {
+int drv_if_down(struct netcf_if *nif) {
     PMIB_IFTABLE intfTable = NULL;
     PMIB_IFTABLE intfTableDup = NULL;
     PMIB_IFROW intRow;
@@ -194,7 +194,7 @@ int w32_if_down(struct netcf_if *nif) {
     return 0;
 }
 
-int w32_if_up(struct netcf_if *nif) {
+int drv_if_up(struct netcf_if *nif) {
     PMIB_IFTABLE intfTable = NULL;
     PMIB_IFTABLE intfTableDup = NULL;
     PMIB_IFROW intRow;
@@ -220,7 +220,7 @@ int w32_if_up(struct netcf_if *nif) {
     return 0;
 }
 
-int w32_if_ipaddresses(struct netcf_if *nif, const char *ipBuf) {
+int drv_if_ipaddresses(struct netcf_if *nif, const char *ipBuf) {
     PIP_ADAPTER_ADDRESSES addrList = NULL;
     PIP_ADAPTER_ADDRESSES adapterp = NULL;
     PMIB_IPADDRTABLE ipAddrTable = NULL; 
@@ -260,7 +260,7 @@ int w32_if_ipaddresses(struct netcf_if *nif, const char *ipBuf) {
     return -1;
 }
 
-int w32_add_ip_address(struct netcf_if *nif, char *ipAddr, char *netmask) {
+int drv_add_ip_address(struct netcf_if *nif, char *ipAddr, char *netmask) {
     IN_ADDR addr;
     PIP_ADAPTER_ADDRESSES addrList = NULL;
     PIP_ADAPTER_ADDRESSES adapterp = NULL;
@@ -338,11 +338,11 @@ int w32_list_dns_server(struct netcf_if *nif, char *ip_str) {
 }
 
 /* NOT IMPLEMENTED
-int w32_add_dns_server(struct netcf_if *nif, const char *dnsAddr) {
+int drv_add_dns_server(struct netcf_if *nif, const char *dnsAddr) {
     return -1;
 }
 
-int w32_rm_dns_server(struct netcf_if *nif) {
+int drv_rm_dns_server(struct netcf_if *nif) {
     return -1;
 }
 */

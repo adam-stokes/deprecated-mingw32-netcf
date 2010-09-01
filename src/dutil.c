@@ -22,11 +22,7 @@
 
 #include <config.h>
 #include <internal.h>
-
-#ifdef HAVE_LIBAUGEAS
 #include <augeas.h>
-#endif
-
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -51,14 +47,12 @@
 #include "netcf.h"
 #include "dutil.h"
 
-#ifdef HAVE_LIBNL
 #include <netlink/socket.h>
 #include <netlink/cache.h>
 #include <netlink/route/addr.h>
 #include <netlink/route/link.h>
 /* For some reason, the headers for libnl vlan functions aren't installed */
 extern int rtnl_link_vlan_get_id(struct rtnl_link *link);
-#endif
 
 #include <dirent.h>
 
@@ -83,7 +77,6 @@ int xasprintf(char **strp, const char *format, ...) {
   return result;
 }
 
-#ifdef HAVE_LIBAUGEAS
 int add_augeas_xfm_table(struct netcf *ncf,
                          const struct augeas_xfm_table *xfm) {
     int slot, r;
@@ -253,7 +246,6 @@ int aug_fmt_match(struct netcf *ncf, char ***matches, const char *fmt, ...) {
     free(path);
     return -1;
 }
-#endif /* LIBAUGEAS */
 
 void free_matches(int nint, char ***intf) {
     if (*intf != NULL) {
@@ -494,14 +486,12 @@ int init_ioctl_fd(struct netcf *ncf) {
     ioctl_fd = socket(AF_INET, SOCK_STREAM, 0);
     ERR_THROW(ioctl_fd < 0, ncf, EINTERNAL, "failed to open socket for interface ioctl");
 
-#ifndef WIN32
     /* None of the needed file descriptor routines available in gnulib */
     flags = fcntl(ioctl_fd, F_GETFD);
     ERR_THROW(flags < 0, ncf, EINTERNAL, "failed to get flags for ioctl socket");
 
     flags = fcntl(ioctl_fd, F_SETFD, flags | FD_CLOEXEC);
     ERR_THROW(flags < 0, ncf, EINTERNAL, "failed to set FD_CLOEXEC flag on ioctl socket");
-#endif /* WIN32 */
     return ioctl_fd;
 
 error:
@@ -510,7 +500,6 @@ error:
     return -1;
 }
 
-#ifdef HAVE_LIBNL
 int netlink_init(struct netcf *ncf) {
 
     ncf->driver->nl_sock = nl_handle_alloc();
@@ -559,7 +548,6 @@ int netlink_close(struct netcf *ncf) {
     }
     return 0;
 }
-#endif /* LIBNL */
 
 int if_is_active(struct netcf *ncf, const char *intf) {
 #ifdef WIN32
@@ -692,7 +680,6 @@ struct netcf_if *make_netcf_if(struct netcf *ncf, char *name) {
     return result;
 }
 
-#ifdef HAVE_LIBAUGEAS
 /*
  * Test interface
  */
@@ -735,7 +722,6 @@ int dutil_put_aug(struct netcf *ncf, const char *aug_xml, char **ncf_xml) {
     xmlFreeDoc(aug_doc);
     return result;
 }
-#endif /* LIBNL */
 
 static void add_type_specific_info(struct netcf *ncf,
                                    const char *ifname, int ifindex,
@@ -835,9 +821,7 @@ static void add_ip_info_cb(struct nl_object *obj, void *arg) {
 error:
     return;
 }
-#endif /* WIN32 */
 
-#ifdef HAVE_LIBNL
 static void add_ip_info(struct netcf *ncf,
                         const char *ifname ATTRIBUTE_UNUSED, int ifindex,
                         xmlDocPtr doc, xmlNodePtr root) {
@@ -1164,7 +1148,7 @@ void add_state_to_xml_doc(struct netcf_if *nif, xmlDocPtr doc) {
 error:
     return;
 }
-#endif /* LIBNL */
+
 /*
  * Bringing interfaces up/down
  */
