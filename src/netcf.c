@@ -92,7 +92,11 @@ int ncf_init(struct netcf **ncf, const char *root) {
     if (make_ref(*ncf) < 0)
         goto oom;
     if (root == NULL)
+#ifdef WIN32
+        root = "c:\\";
+#else
         root = "/";
+#endif
     if (root[strlen(root)-1] == '/') {
         (*ncf)->root = strdup(root);
     } else {

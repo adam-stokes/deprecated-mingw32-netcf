@@ -229,7 +229,6 @@ static int cmd_dump_xml(const struct command *cmd) {
         goto done;
     }
 
-#ifndef WIN32
     if (opt_present(cmd, "live")) {
         xml = ncf_if_xml_state(nif);
     } else {
@@ -237,7 +236,6 @@ static int cmd_dump_xml(const struct command *cmd) {
     }
     if (xml == NULL)
         goto done;
-#endif /* WIN32 */
 
     printf("%s\n", xml);
     result= CMD_RES_OK;
@@ -774,9 +772,7 @@ static int main_loop(void) {
         if (ret == 0 && cmdstatus == CMD_RES_QUIT)
             return ret;
 
-#ifndef WIN32
         add_history(line);
-#endif
         ret = cmdret;
     }
 }
@@ -792,11 +788,13 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Failed to initialize netcf\n");
         if (ncf != NULL)
             print_netcf_error();
-        exit(EXIT_FAILURE);
-    }
 #ifndef WIN32
-    readline_init();
+        // FIXME: Need to find out why ncf_init is croaking
+        exit(EXIT_FAILURE);
 #endif
+    }
+
+    readline_init();
     if (optind < argc) {
         /* Run a single command */
         int i, ignore_status;

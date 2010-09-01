@@ -38,7 +38,9 @@
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
 #include <windns.h>
-#include "netcf.h"
+#include "safe-alloc.h"
+#include "ref.h"
+#include "list.h"
 
 static int aug_put_xml(struct netcf *ncf, xmlDocPtr xml);
 static int bridge_slaves(struct netcf *ncf, const char *name, char ***slaves);
