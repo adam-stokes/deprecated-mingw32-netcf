@@ -16,25 +16,30 @@ noinst_PROGRAMS = ncftransform
 EXTRA_DIST = netcf_public.syms \
 	netcf_private.syms
 
-DRIVER_SOURCES = dutil.h dutil.c netcf.c drv_initscripts.c
+if NETCF_DRIVER_INITSCRIPTS
+DRIVER_SOURCES = drv_initscripts.c dutil.h dutil.c \
+	dutil_linux.h dutil_linux.c
+endif
 
 if PLATFORM_WIN32
 WIN32LIB= -liphlpapi -ldnsapi
 DRIVER_SOURCES += netcf_win.h netcf_win.c
-else
-DRIVER_SOURCES += dutil_linux.c
 endif
 
 BUILT_SOURCES = datadir.h netcf.syms
 
 DISTCLEANFILES = datadir.h
 
-libnetcf_la_SOURCES = netcf.h internal.h \
+libnetcf_la_SOURCES = netcf.h netcf.c internal.h \
      ref.h list.h \
      xslt_ext.c $(DRIVER_SOURCES)
 libnetcf_la_LDFLAGS = -Wl,--version-script=netcf.syms \
      -version-info $(LIBNETCF_VERSION_INFO) @MINGW_EXTRA_LDFLAGS@
-libnetcf_la_LIBADD = $(NETCF_LIBDEPS) $(GNULIB) $(WIN32LIB)
+libnetcf_la_LIBADD = $(NETCF_LIBDEPS) $(GNULIB)
+if PLATFORM_WIN32
+libnetcf_la_LIBADD += $(WIN32LIB)
+endif
+
 #libnetcf_la_DEPENDENCIES = $(libnetcf_la_LIBADD) netcf.syms
 
 ncftool_SOURCES = ncftool.c
