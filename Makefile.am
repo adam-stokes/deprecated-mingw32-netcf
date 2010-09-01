@@ -7,7 +7,7 @@ EXTRA_DIST=netcf.spec build/aux/move-if-change
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = netcf.pc
 
-if PLATFORM_WIN32_FALSE
+if HAVE_LIBAUGEAS
 netcfdir=$(datadir)/netcf
 xmldir=$(netcfdir)/xml
 lensdir=$(netcfdir)/lenses
