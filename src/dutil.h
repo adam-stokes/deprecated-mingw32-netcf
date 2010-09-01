@@ -25,7 +25,7 @@
 
 #include <libxml/relaxng.h>
 #include <libxslt/xsltInternals.h>
-#ifndef WIN32
+#ifndef HAVE_LIBNL
 #include <netlink/netlink.h>
 #endif
 
@@ -160,6 +160,7 @@ void add_state_to_xml_doc(struct netcf_if *nif, xmlDocPtr doc);
 void run1(struct netcf *ncf, const char *prog, const char *arg);
 
 #endif
+
 
 /*
  * Local variables:

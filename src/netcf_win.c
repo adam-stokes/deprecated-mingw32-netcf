@@ -52,7 +52,6 @@ PMIB_IFTABLE _get_if_table(PMIB_IFTABLE intfTable) {
 	return intfTable;
  error:
     FREE(intfTable);
-    return intfTable;
 }
 
 PIP_ADAPTER_ADDRESSES _get_ip_adapter_info(PIP_ADAPTER_ADDRESSES addrList) {
@@ -75,7 +74,6 @@ PIP_ADAPTER_ADDRESSES _get_ip_adapter_info(PIP_ADAPTER_ADDRESSES addrList) {
     return addrList;
  error:
     FREE(addrList);
-    return addrList;
 }
     
 int w32_list_interface_ids(struct netcf *ncf ATTRIBUTE_UNUSED, 
@@ -87,18 +85,14 @@ int w32_list_interface_ids(struct netcf *ncf ATTRIBUTE_UNUSED,
     PIP_ADAPTER_ADDRESSES addrList = NULL;
     PIP_ADAPTER_ADDRESSES adapterp = NULL;
     adapterp = _get_ip_adapter_info(addrList);
-    if(adapterp != NULL) {
-	for (nint = 0; adapterp != NULL; nint++) {
-	    if (names) {
-		char name[8192];
-		WideCharToMultiByte(CP_UTF8, 0, adapterp->FriendlyName,
-				    -1, name, sizeof(name), NULL, NULL);
-		names[nint] = strdup(name);
-	    }
-	    adapterp = adapterp->Next;
+    for (nint = 0; adapterp != NULL; nint++) {
+	if (names) {
+	    char name[8192];
+	    WideCharToMultiByte(CP_UTF8, 0, adapterp->FriendlyName,
+				-1, name, sizeof(name), NULL, NULL);
+	    names[nint] = strdup(name);
 	}
-    } else {
-	goto error;
+	adapterp = adapterp->Next;
     }
     return nint;
  error:
@@ -125,21 +119,20 @@ struct netcf_if *w32_lookup_by_name(struct netcf *ncf, const char *name) {
     PIP_ADAPTER_ADDRESSES addrList = NULL;
     PIP_ADAPTER_ADDRESSES adapterp = NULL;
     adapterp = _get_ip_adapter_info(addrList);
-    if (adapterp != NULL) {
-	for (nint = 0; adapterp != NULL; nint++) {
-	    if (name) {
-		char wName[8192];
-		WideCharToMultiByte(CP_UTF8, 0, adapterp->FriendlyName,
-				    -1, wName, sizeof(wName), NULL, NULL);
-		if (strcmp(wName, name) == 0) {
-		    name_dup = strdup(wName);
-		    nif = make_netcf_if(ncf, name_dup);
-		    goto done;
-		}
+    for (nint = 0; adapterp != NULL; nint++) {
+	if (name) {
+	    char wName[8192];
+	    WideCharToMultiByte(CP_UTF8, 0, adapterp->FriendlyName,
+				-1, wName, sizeof(wName), NULL, NULL);
+	    if (strcmp(wName, name) == 0) {
+		name_dup = strdup(wName);
+		nif = make_netcf_if(ncf, name_dup);
+		goto done;
 	    }
-	    adapterp = adapterp->Next;
 	}
+	adapterp = adapterp->Next;
     }
+
  done:
     return nif;
 }
@@ -157,7 +150,7 @@ const char *w32_mac_string(struct netcf_if *nif) {
 	WideCharToMultiByte(CP_UTF8, 0, adapterp->FriendlyName,
 			    -1, wName, sizeof(wName), NULL, NULL);
        	if (strcmp(wName,nif->name) == 0) {
-	    if ((int)adapterp->PhysicalAddressLength > 6)
+	    if ((int)adapterp->PhysicalAddressLength >= 6)
 		continue; /* just want ethernet for now */
 	    sprintf(mac, "%02X:%02X:%02X:%02X:%02X:%02X",
 		    adapterp->PhysicalAddress[0],
@@ -343,3 +336,13 @@ int w32_list_dns_server(struct netcf_if *nif, char *ip_str) {
     }
     return 0;
 }
+
+/* NOT IMPLEMENTED
+int w32_add_dns_server(struct netcf_if *nif, const char *dnsAddr) {
+    return -1;
+}
+
+int w32_rm_dns_server(struct netcf_if *nif) {
+    return -1;
+}
+*/

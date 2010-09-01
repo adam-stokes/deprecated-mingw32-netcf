@@ -24,7 +24,6 @@
 #include "internal.h"
 
 #include <errno.h>
-
 #include <arpa/inet.h>
 #include <libxml/xpath.h>
 #include <libxml/xpathInternals.h>

@@ -29,13 +29,10 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
-
 #include <sys/wait.h>
-
 #include <signal.h>
 #include <errno.h>
 #include "safe-alloc.h"
- 
 #include "internal.h"
 #include "netcf.h"
 #include "dutil.h"
@@ -101,7 +98,6 @@ int ncf_init(struct netcf **ncf, const char *root) {
         if (xasprintf(&(*ncf)->root, "%s/", root) < 0)
             goto oom;
     }
-
     if ((*ncf)->root == NULL)
         goto oom;
     (*ncf)->data_dir = getenv("NETCF_DATADIR");
@@ -148,8 +144,7 @@ int ncf_num_of_interfaces(struct netcf *ncf, unsigned int flags) {
     return drv_num_of_interfaces(ncf, flags);
 }
 
-int ncf_list_interfaces(struct netcf *ncf, int maxnames, 
-                        char **names, unsigned int flags) {
+int ncf_list_interfaces(struct netcf *ncf, int maxnames, char **names, unsigned int flags) {
     int result;
 
     API_ENTRY(ncf);

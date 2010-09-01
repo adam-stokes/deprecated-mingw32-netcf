@@ -26,8 +26,6 @@
 #ifdef HAVE_LIBAUGEAS
 #include <augeas.h>
 #endif
-#include <net/if.h>
-#include <netinet/in.h>
 
 #include <stdlib.h>
 #include <stdarg.h>
@@ -42,6 +40,9 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <sys/socket.h>
 
 #include "safe-alloc.h"
@@ -263,7 +264,7 @@ void free_matches(int nint, char ***intf) {
 }
 
 xsltStylesheetPtr parse_stylesheet(struct netcf *ncf,
-                                   const char *fname) {
+                                          const char *fname) {
     xsltStylesheetPtr result = NULL;
     char *path = NULL;
     int r;

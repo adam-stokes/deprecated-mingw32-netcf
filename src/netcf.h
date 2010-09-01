@@ -56,6 +56,7 @@ typedef enum {
     NETCF_ENETLINK       /* something related to the netlink socket failed */
 } netcf_errcode_t;
 
+
 /*
  * flags accepted by ncf_num_of_interfaces and ncf_list_interfaces.
  * IMPORTANT NOTE: These are bits, so you should assign only powers of two

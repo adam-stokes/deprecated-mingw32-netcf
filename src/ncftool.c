@@ -135,7 +135,7 @@ static const char *arg_value(const struct command *cmd, const char *name) {
     return result;
 }
 
-static int cmd_list(const struct command *cmd) {
+static int cmd_list(ATTRIBUTE_UNUSED const struct command *cmd) {
     int nint;
     char **intf;
     unsigned int flags = NETCF_IFACE_ACTIVE;
@@ -146,6 +146,7 @@ static int cmd_list(const struct command *cmd) {
     if (opt_present(cmd, "all")) {
         flags = NETCF_IFACE_ACTIVE | NETCF_IFACE_INACTIVE;
     }
+
     nint = ncf_num_of_interfaces(ncf, flags);
     if (nint < 0)
         return CMD_RES_ERR;
