@@ -6,7 +6,7 @@
 
 Name:           mingw32-netcf
 Version:        @VERSION@
-Release:        1%{?dist}%{?extra_release}
+Release:        2%{?dist}%{?extra_release}
 Summary:        Cross-platform network configuration library
 
 Group:          System Environment/Libraries
@@ -59,12 +59,9 @@ rm -rf $RPM_BUILD_ROOT
 %doc AUTHORS COPYING NEWS
 
 %changelog
-* Mon Aug 02 2010 Adam Stokes <ajs@redhat.com> - 0.1.8-1
+* Mon Sep 1 2010 Adam Stokes <ajs@redhat.com> - 0.1.6-2
 - Update spec to not require .dll.a or *.la
 - Fixed building of DLL
-
-* Wed Jul 28 2010 Adam Stokes <ajs@redhat.com> - 0.1.7-1
-- cross compile
 
 * Thu Apr 16 2010 Laine Stump <laine@redhat.com> - 0.1.6-1
 - New version
