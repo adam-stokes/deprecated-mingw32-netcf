@@ -27,6 +27,11 @@
 #define WINVER 0x0501
 #endif
 
+#include <config.h>
+#include "internal.h"
+
+#include <stdbool.h>
+#include <string.h>
 #include <windows.h>
 #include <winsock.h>
 #include <winsock2.h>
@@ -34,6 +39,31 @@
 #include <iphlpapi.h>
 #include <windns.h>
 #include "netcf.h"
+
+static int aug_put_xml(struct netcf *ncf, xmlDocPtr xml);
+static int bridge_slaves(struct netcf *ncf, const char *name, char ***slaves);
+static int cmpstrp(const void *p1, const void *p2);
+static int is_slave(struct netcf *ncf, const char *intf);
+static int list_ifcfg_paths(struct netcf *ncf, char ***intf);
+static int list_interface_ids(struct netcf *ncf, int maxnames, char **names,
+			      unsigned int flags, const char *id_attr);
+static int list_interfaces(struct netcf *ncf, char ***intf);
+static int uniq_ifcfg_paths(struct netcf *ncf, int ndevs, char **devs, char ***intf);
+static bool has_ifcfg_file(struct netcf *ncf, const char *name);
+static bool is_bond(struct netcf *ncf, const char *name);
+static bool is_bridge(struct netcf *ncf, const char *name);
+static char *device_name_from_xml(struct netcf *ncf, xmlDocPtr ncf_xml);
+static char *find_ifcfg_path_by_device(struct netcf *ncf, const char *name);
+static char *find_ifcfg_path_by_hwaddr(struct netcf *ncf, const char *mac);
+static char *find_ifcfg_path(struct netcf *ncf, const char *name);
+static void bond_setup(struct netcf *ncf, const char *name, bool alias);
+static void bridge_physdevs(struct netcf *ncf);
+static void rm_all_interfaces(struct netcf *ncf, xmlDocPtr ncf_xml);
+static void rm_interface(struct netcf *ncf, const char *name);
+static xmlDocPtr aug_get_xml_for_nif(struct netcf_if *nif);
+static xmlDocPtr aug_get_xml(struct netcf *ncf, int nint, char **intf);
+struct netcf_if *make_netcf_if(struct netcf *ncf, char *name);
+int xasprintf(char **strp, const char *format, ...);
 
 /* structure return of interface table */
 PMIB_IFTABLE _get_if_table(PMIB_IFTABLE intfTable);
@@ -43,33 +73,9 @@ PIP_ADAPTER_ADDRESSES _get_ip_adapter_info(PIP_ADAPTER_ADDRESSES addrList);
 
 PMIB_IPADDRTABLE _get_ip_addr_table(PMIB_IPADDRTABLE ipAddrTable);
 
-/* return num of interfaces enabled */
-int drv_num_of_interfaces(struct netcf *ncf, unsigned int flags);
-
-/* helper for providing number of interfaces and associated names */
-int drv_list_interface_ids(struct netcf *ncf, int maxnames, 
-			   char **names, unsigned int flags,
-			   const char *id_attr);
-			   
-/* list interface names */
-int drv_list_interfaces(struct netcf *ncf,
-			int maxnames, char **names,
-			unsigned int flags);
-
-/* lookup interface by name */
-struct netcf_if *drv_lookup_by_name(struct netcf *ncf, const char *name);
-
-/* obtain hardware address of interface */
-const char *drv_mac_string(struct netcf_if *nif);
-
-/* bring interface down */
-int drv_if_down(struct netcf_if *nif);
-
-/* bring interface up */
-int drv_if_up(struct netcf_if *nif);
-
 /* Reports ip addresses */
-int drv_if_ipaddresses(struct netcf_if *nif, const char *ipBuf);
+int drv_if_ipaddresses(struct netcf_if *nif, char *ipBuf);
+
 /* add ip address to device */
 int drv_add_ip_address(struct netcf_if *nif, char *ipAddr,
 		       char *netmask);
@@ -79,5 +85,7 @@ int drv_rm_ip_address(struct netcf_if *nif, ULONG NTEContext);
 int drv_add_dns_server(struct netcf_if *nif, ULONG NTEContext);
 /* rm dns server from device */
 int drv_rm_dns_server(struct netcf_if *nif);
+/* list dns server */
+int drv_list_dns_server(struct netcf_if *ncf, char *ip_str);
 
 #endif /* NETCF_WIN_H */

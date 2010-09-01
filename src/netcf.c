@@ -35,9 +35,10 @@
 #include "safe-alloc.h"
 #include "internal.h"
 #include "netcf.h"
-#include "dutil.h"
 #ifdef WIN32
 #include "netcf_win.h"
+#else
+#include "dutil.h"
 #endif
 
 /* Clear error code and details */
@@ -118,9 +119,6 @@ int ncf_close(struct netcf *ncf) {
     API_ENTRY(ncf);
 
     ERR_COND_BAIL(ncf->ref > 1, ncf, EINUSE);
-
-    *ncf = NULL;
-    ncf->driver = NULL;
 
     drv_close(ncf);
     unref(ncf, netcf);
@@ -268,6 +266,10 @@ int ncf_put_aug(struct netcf *ncf, const char *aug_xml, char **ncf_xml) {
     return drv_put_aug(ncf, aug_xml, ncf_xml);
 }
 
+#ifndef WIN32
+/* Do not see any other way around this as there is no
+ * portable option for strerror_r or pthread_sigmask
+ */
 /*
  * Internal helpers
  */
@@ -278,16 +280,13 @@ exec_program(struct netcf *ncf,
              const char *commandline,
              pid_t *pid)
 {
-#ifdef HAVE_PTHREAD_SIGMASK
     sigset_t oldmask, newmask;
     struct sigaction sig_action;
     char errbuf[128];
-#endif
 
     /* commandline is only used for error reporting */
     if (commandline == NULL)
         commandline = argv[0];
-#ifdef HAVE_PTHREAD_SIGMASK
     /*
      * Need to block signals now, so that child process can safely
      * kill off caller's signal handlers without a race.
@@ -342,14 +341,9 @@ exec_program(struct netcf *ncf,
         _exit(1);
     }
     /* close all open file descriptors */
-#ifdef _SC_OPEN_MAX
     int openmax = sysconf (_SC_OPEN_MAX);
-#else
-    int openmax = getdtablesize();
-#endif
     for (i = 3; i < openmax; i++)
         close(i);
-#endif
 
     execvp(argv[0], (char **) argv);
 
@@ -407,7 +401,7 @@ error:
     FREE(argv_str);
     return ret;
 }
-
+#endif /* WIN32 */
 /*
  * argv_to_string() is borrowed from libvirt's
  * src/util.c:virArgvToString()

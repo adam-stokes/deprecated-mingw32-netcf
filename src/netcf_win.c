@@ -4,23 +4,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "netcf_win.h"
-#include "dutil.h"
 
 #define MAX_TRIES 3
 #define GAA_FLAGS ( GAA_FLAG_SKIP_DNS_SERVER | GAA_FLAG_SKIP_MULTICAST )
 #define BUFSIZE 8192
 
-#define MALLOC(x) HeapAlloc(GetProcessHeap(), 0, (x))
-#define FREE(x) HeapFree(GetProcessHeap(), 0, (x))
-
 PMIB_IPADDRTABLE _get_ip_addr_table(PMIB_IPADDRTABLE ipAddrTable) {
     DWORD r = 0;
     DWORD buf = 0;
 
-    ipAddrTable = (PMIB_IPADDRTABLE) MALLOC(sizeof (MIB_IPADDRTABLE));
+    ipAddrTable = (PMIB_IPADDRTABLE) malloc(sizeof (MIB_IPADDRTABLE));
     if (GetIpAddrTable(ipAddrTable, &buf, 0) == ERROR_INSUFFICIENT_BUFFER) {
-	FREE(ipAddrTable);
-	ipAddrTable = (PMIB_IPADDRTABLE) MALLOC(buf);
+	free(ipAddrTable);
+	ipAddrTable = (PMIB_IPADDRTABLE) malloc(buf);
 	if (ipAddrTable == NULL)
 	    goto error;
     }
@@ -29,21 +25,21 @@ PMIB_IPADDRTABLE _get_ip_addr_table(PMIB_IPADDRTABLE ipAddrTable) {
 	return ipAddrTable;
 
  error:
-    FREE(ipAddrTable);
+    free(ipAddrTable);
     return ipAddrTable;
 }
 
 PMIB_IFTABLE _get_if_table(PMIB_IFTABLE intfTable) {
     DWORD bufferLength = 0;
     DWORD r = 0;
-    intfTable = (PMIB_IFTABLE) MALLOC(sizeof(MIB_IFTABLE));
+    intfTable = (PMIB_IFTABLE) malloc(sizeof(MIB_IFTABLE));
     if (intfTable == NULL)
 	goto error;
 
     bufferLength = sizeof(MIB_IFTABLE);
     if (GetIfTable(intfTable, &bufferLength, FALSE) == ERROR_INSUFFICIENT_BUFFER) {
-	FREE(intfTable);
-	intfTable = (PMIB_IFTABLE) MALLOC(bufferLength);
+	free(intfTable);
+	intfTable = (PMIB_IFTABLE) malloc(bufferLength);
 	if (intfTable == NULL)
 	    goto error;
     }
@@ -51,7 +47,7 @@ PMIB_IFTABLE _get_if_table(PMIB_IFTABLE intfTable) {
     if ((r = GetIfTable(intfTable, &bufferLength, FALSE)) == NO_ERROR)
 	return intfTable;
  error:
-    FREE(intfTable);
+    free(intfTable);
 }
 
 PIP_ADAPTER_ADDRESSES _get_ip_adapter_info(PIP_ADAPTER_ADDRESSES addrList) {
@@ -67,19 +63,240 @@ PIP_ADAPTER_ADDRESSES _get_ip_adapter_info(PIP_ADAPTER_ADDRESSES addrList) {
 	if (addrList != NULL) {
 	    goto error;
 	}
-	addrList = (PIP_ADAPTER_ADDRESSES) MALLOC(bufferLength);
+	addrList = (PIP_ADAPTER_ADDRESSES) malloc(bufferLength);
 	if (addrList == NULL)
 	    goto error;
     }	
     return addrList;
  error:
-    FREE(addrList);
+    free(addrList);
+}
+
+/* All undefined routines in windows */
+int drv_get_aug(struct netcf *ncf, const char *ncf_xml, char **aug_xml) {
+#ifdef WIN32
+    return -1;
+#endif
+}
+
+int drv_if_status(struct netcf_if *nif, unsigned int *flags) {
+#ifdef WIN32
+    return -1;
+#endif
+}
+
+int drv_init(struct netcf *ncf) {
+#ifdef WIN32
+    return -1;
+#endif
+}
+
+int drv_lookup_by_mac_string(struct netcf *ncf, const char *mac,
+			     int maxifaces, struct netcf_if **ifaces) {
+#ifdef WIN32
+    return -1;
+#endif
+}
+
+int drv_put_aug(struct netcf *ncf, const char *aug_xml, char **ncf_xml) {
+#ifdef WIN32
+    return -1;
+#endif
+}
+
+int drv_undefine(struct netcf_if *nif) {
+#ifdef WIN32
+    return -1;
+#endif
+}
+
+char *drv_xml_desc(struct netcf_if *nif) {
+#ifdef WIN32
+    return -1;
+#endif
+}
+
+char *drv_xml_state(struct netcf_if *nif) {
+#ifdef WIN32
+    return -1;
+#endif
+}
+
+struct netcf_if *drv_define(struct netcf *ncf, const char *xml_str) {
+#ifdef WIN32
+    return ncf;
+#endif
+}
+
+static bool has_ifcfg_file(struct netcf *ncf, const char *name) {
+#ifdef WIN32
+    return FALSE;
+#endif
+}
+
+static bool is_bond(struct netcf *ncf, const char *name) {
+#ifdef WIN32
+    return FALSE;
+#endif
+}
+
+static bool is_bridge(struct netcf *ncf, const char *name) {
+#ifdef WIN32
+    return FALSE;
+#endif
+}
+
+static char *device_name_from_xml(struct netcf *ncf, xmlDocPtr ncf_xml) {
+#ifdef WIN32
+    char *ret = NULL;
+    return ret;
+#endif
+}
+
+static char *find_ifcfg_path_by_device(struct netcf *ncf, const char *name) {
+#ifdef WIN32
+    char *ret = NULL;
+    return ret;
+#endif
+}
+
+static char *find_ifcfg_path_by_hwaddr(struct netcf *ncf, const char *mac) {
+#ifdef WIN32
+    char *ret = NULL;
+    return ret;
+#endif
+}
+
+static char *find_ifcfg_path(struct netcf *ncf, const char *name) {
+#ifdef WIN32
+    char *ret = NULL;
+    return ret;
+#endif
+}
+
+static int aug_put_xml(struct netcf *ncf, xmlDocPtr xml) {
+#ifdef WIN32
+    return -1;
+#endif
+}
+static int bridge_slaves(struct netcf *ncf, const char *name, char ***slaves) {
+#ifdef WIN32
+    return -1;
+#endif
+}
+
+static int cmpstrp(const void *p1, const void *p2) {
+#ifdef WIN32
+    return -1;
+#endif
+}
+
+static int is_slave(struct netcf *ncf, const char *intf) {
+#ifdef WIN32
+    return -1;
+#endif
+}
+
+static int list_ifcfg_paths(struct netcf *ncf, char ***intf) {
+#ifdef WIN32
+    return -1;
+#endif
+}
+
+static int list_interfaces(struct netcf *ncf, char ***intf){
+#ifdef WIN32
+    return -1;
+#endif
+}
+
+static int uniq_ifcfg_paths(struct netcf *ncf, int ndevs, char **devs, char ***intf) {
+#ifdef WIN32
+    return -1;
+#endif
+}
+
+static void bond_setup(struct netcf *ncf, const char *name, bool alias) {
+#ifdef WIN32
+    return;
+#endif
+}
+
+static void bridge_physdevs(struct netcf *ncf) {
+#ifdef WIN32
+    return;
+#endif
+}
+
+static void rm_all_interfaces(struct netcf *ncf, xmlDocPtr ncf_xml) {
+#ifdef WIN32
+    return;
+#endif
+}
+
+static void rm_interface(struct netcf *ncf, const char *name) {
+#ifdef WIN32
+    return;
+#endif
+}
+
+static xmlDocPtr aug_get_xml_for_nif(struct netcf_if *nif) {
+#ifdef WIN32
+    xmlDocPtr result = NULL;
+    return result;
+#endif
+}
+
+static xmlDocPtr aug_get_xml(struct netcf *ncf, int nint, char **intf) {
+#ifdef WIN32
+    xmlDocPtr result = NULL;
+    return result;
+#endif
+}
+
+void drv_entry(struct netcf *ncf) {
+#ifdef WIN32
+    return;
+#endif
+}
+
+void drv_close(struct netcf *ncf) {
+#ifdef WIN32
+    return;
+#endif
+}
+
+int xasprintf(char **strp, const char *format, ...) {
+  va_list args;
+  int result;
+
+  va_start (args, format);
+  result = vasprintf (strp, format, args);
+  va_end (args);
+  if (result < 0)
+      *strp = NULL;
+  return result;
+}
+
+/* Create a new netcf if instance for interface NAME */
+struct netcf_if *make_netcf_if(struct netcf *ncf, char *name) {
+    int r;
+    struct netcf_if *result = NULL;
+
+    r = make_ref(result);
+    ERR_NOMEM(r < 0, ncf);
+    result->ncf = ref(ncf);
+    result->name = name;
+    return result;
+
+ error:
+    unref(result, netcf_if);
+    return result;
 }
     
-int drv_list_interface_ids(struct netcf *ncf ATTRIBUTE_UNUSED, 
-			   int maxnames ATTRIBUTE_UNUSED,
-			   char **names, unsigned int flags ATTRIBUTE_UNUSED,
-			   const char *id_attr ATTRIBUTE_UNUSED) {
+static int list_interface_ids(struct netcf *ncf ATTRIBUTE_UNUSED, 
+				  int maxnames ATTRIBUTE_UNUSED,
+				  char **names, unsigned int flags ATTRIBUTE_UNUSED,
+				  const char *id_attr ATTRIBUTE_UNUSED) {
     unsigned int nint = 0;
 
     PIP_ADAPTER_ADDRESSES addrList = NULL;
@@ -96,19 +313,19 @@ int drv_list_interface_ids(struct netcf *ncf ATTRIBUTE_UNUSED,
     }
     return nint;
  error:
-    FREE(addrList);
+    free(addrList);
     return -1;
 }
 
 int drv_list_interfaces(struct netcf *ncf,
 		    int maxnames ATTRIBUTE_UNUSED, char **names,
 		    unsigned int flags ATTRIBUTE_UNUSED) {
-    return w32_list_interface_ids(ncf, 0, names, 0, NULL);
+    return list_interface_ids(ncf, 0, names, 0, NULL);
 }
 
 
-int w32_num_of_interfaces(struct netcf *ncf, unsigned int flags ATTRIBUTE_UNUSED) {
-    return w32_list_interface_ids(ncf, 0, NULL, 0, NULL);
+int drv_num_of_interfaces(struct netcf *ncf, unsigned int flags ATTRIBUTE_UNUSED) {
+    return list_interface_ids(ncf, 0, NULL, 0, NULL);
 }
 
 
@@ -220,7 +437,7 @@ int drv_if_up(struct netcf_if *nif) {
     return 0;
 }
 
-int drv_if_ipaddresses(struct netcf_if *nif, const char *ipBuf) {
+int drv_if_ipaddresses(struct netcf_if *nif, char *ipBuf) {
     PIP_ADAPTER_ADDRESSES addrList = NULL;
     PIP_ADAPTER_ADDRESSES adapterp = NULL;
     PMIB_IPADDRTABLE ipAddrTable = NULL; 
@@ -255,8 +472,8 @@ int drv_if_ipaddresses(struct netcf_if *nif, const char *ipBuf) {
 	}
 
     }
-    FREE(ipAddrTable);
-    FREE(addrList);
+    free(ipAddrTable);
+    free(addrList);
     return -1;
 }
 
@@ -273,7 +490,7 @@ int drv_add_ip_address(struct netcf_if *nif, char *ipAddr, char *netmask) {
 
     /* ipv4 addr/subnetmask */
     UINT IPAddress;
-    UINT IPMask;
+    UINT IPNetMask;
 
     /* handles to IP returned */
     ULONG NTEContext = 0;
@@ -282,7 +499,7 @@ int drv_add_ip_address(struct netcf_if *nif, char *ipAddr, char *netmask) {
     if ((IPAddress = inet_addr(ipAddr)) == INADDR_NONE)
 	return -1;
 
-    if ((IPMask = inet_addr(netmask)) == INADDR_NONE)
+    if ((IPNetMask = inet_addr(netmask)) == INADDR_NONE)
 	return -1;
 
 
@@ -294,20 +511,20 @@ int drv_add_ip_address(struct netcf_if *nif, char *ipAddr, char *netmask) {
 	    WideCharToMultiByte(CP_UTF8, 0, adapterp->FriendlyName,
 				-1, wName, sizeof(wName), NULL, NULL);
 	    if (strcmp(wName,nif->name) == 0) {
-		if ((r = AddIPAddress(IPAddress, IPMask, ifIndex,
+		if ((r = AddIPAddress(IPAddress, IPNetMask, ifIndex,
 				      &NTEContext, &NTEInstance)) == NO_ERROR) {
 		    return 0;
 		}
 	    }
 	}
     }
-    FREE(ipAddrTable);
+    free(ipAddrTable);
     return -1;
 }
 
 
 /* needs further testing
-int w32_rm_ip_address(struct netcf_if *nif, ULONG NTEContext) {
+int drv_rm_ip_address(struct netcf_if *nif, ULONG NTEContext) {
     DWORD r = 0;
     if ((r = DeleteIpAddress(NTEConext)) == NO_ERROR)
 	return 0;
@@ -315,7 +532,7 @@ int w32_rm_ip_address(struct netcf_if *nif, ULONG NTEContext) {
 }
 */
 
-int w32_list_dns_server(struct netcf_if *nif, char *ip_str) {
+int drv_list_dns_server(struct netcf_if *nif, char *ip_str) {
     char bufferLength[1024];
     IP4_ARRAY *ips = (IP4_ARRAY*) bufferLength;
     DWORD len = sizeof(bufferLength);

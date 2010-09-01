@@ -550,9 +550,6 @@ int netlink_close(struct netcf *ncf) {
 }
 
 int if_is_active(struct netcf *ncf, const char *intf) {
-#ifdef WIN32
-    return 0;
-#endif
     struct ifreq ifr;
 
     MEMZERO(&ifr, 1);
@@ -741,9 +738,6 @@ struct nl_ip_callback_data {
 /* add all ip addresses for the given interface to the xml document
 */
 static void add_ip_info_cb(struct nl_object *obj, void *arg) {
-#ifdef WIN32
-    return;
-#endif
     struct nl_ip_callback_data *cb_data = arg;
     struct rtnl_addr *addr = (struct rtnl_addr *)obj;
     struct netcf *ncf = cb_data->ncf;
