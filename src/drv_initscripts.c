@@ -373,12 +373,14 @@ static int list_interfaces(struct netcf *ncf, char ***intf) {
     return -1;
 }
 
-#ifndef WIN32
 /* Ensure we have an iptables rule to bridge physdevs. We take care of both
  * systems using iptables directly, and systems using lokkit (even if it's
  * only installed, but not used)
  */
 static void bridge_physdevs(struct netcf *ncf) {
+#ifdef WIN32
+    return;
+#endif
     struct augeas *aug = NULL;
     char *path = NULL, *p = NULL;
     const char *argv[5];
@@ -494,7 +496,6 @@ static void bridge_physdevs(struct netcf *ncf) {
     free(p);
     return;
 }
-#endif /* WIN32 */
 
 int drv_init(struct netcf *ncf) {
     int r;

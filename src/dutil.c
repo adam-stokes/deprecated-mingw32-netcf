@@ -23,11 +23,11 @@
 #include <config.h>
 #include <internal.h>
 
-#ifndef WIN32
+#ifdef HAVE_LIBAUGEAS
 #include <augeas.h>
+#endif
 #include <net/if.h>
 #include <netinet/in.h>
-#endif
 
 #include <stdlib.h>
 #include <stdarg.h>
@@ -560,12 +560,10 @@ int netlink_close(struct netcf *ncf) {
 }
 #endif /* LIBNL */
 
+int if_is_active(struct netcf *ncf, const char *intf) {
 #ifdef WIN32
-int if_is_active(struct netcf *ncf, const char *intf) {
     return 0;
-}
-#else
-int if_is_active(struct netcf *ncf, const char *intf) {
+#endif
     struct ifreq ifr;
 
     MEMZERO(&ifr, 1);
@@ -576,7 +574,6 @@ int if_is_active(struct netcf *ncf, const char *intf) {
     }
     return ((ifr.ifr_flags & IFF_UP) == IFF_UP);
 }
-#endif /* WIN32 */
 
 netcf_if_type_t if_type(struct netcf *ncf, const char *intf) {
     char *path;
@@ -754,14 +751,12 @@ struct nl_ip_callback_data {
     struct netcf *ncf;
 };
 
-#ifdef WIN32
-static void add_ip_info_cb(struct nl_object *obj ATTRIBUTE_UNUSED, void *arg) {
-
-}
-#else
 /* add all ip addresses for the given interface to the xml document
 */
 static void add_ip_info_cb(struct nl_object *obj, void *arg) {
+#ifdef WIN32
+    return;
+#endif
     struct nl_ip_callback_data *cb_data = arg;
     struct rtnl_addr *addr = (struct rtnl_addr *)obj;
     struct netcf *ncf = cb_data->ncf;
