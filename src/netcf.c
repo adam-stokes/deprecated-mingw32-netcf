@@ -28,10 +28,10 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <pthread.h>
 #include <sys/wait.h>
 #include <signal.h>
 #include <errno.h>
+
 #include "safe-alloc.h"
 #include "internal.h"
 #include "netcf.h"
@@ -344,6 +344,7 @@ exec_program(struct netcf *ncf,
         /* don't report_error, as it will never be seen anyway */
         _exit(1);
     }
+
     /* close all open file descriptors */
     int openmax = sysconf (_SC_OPEN_MAX);
     for (i = 3; i < openmax; i++)
@@ -405,6 +406,7 @@ error:
     FREE(argv_str);
     return ret;
 }
+
 #endif /* WIN32 */
 /*
  * argv_to_string() is borrowed from libvirt's

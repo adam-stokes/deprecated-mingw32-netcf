@@ -22,6 +22,7 @@
 
 #include <config.h>
 #include <internal.h>
+
 #include <augeas.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -39,7 +40,6 @@
 #include <net/if.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <sys/socket.h>
 
 #include "safe-alloc.h"
 #include "ref.h"
@@ -120,7 +120,6 @@ int remove_augeas_xfm_table(struct netcf *ncf,
     }
     return 0;
 }
-
 
 /* Get the Augeas instance; if we already initialized it, just return
  * it. Otherwise, create a new one and return that.
@@ -457,7 +456,6 @@ static xmlNodePtr xml_new_node(xmlDocPtr doc,
     return ret;
 }
 
-
 /* Find existing node of given name within parent, or create and link
  * in a new one if not found.
  */
@@ -486,7 +484,6 @@ int init_ioctl_fd(struct netcf *ncf) {
     ioctl_fd = socket(AF_INET, SOCK_STREAM, 0);
     ERR_THROW(ioctl_fd < 0, ncf, EINTERNAL, "failed to open socket for interface ioctl");
 
-    /* None of the needed file descriptor routines available in gnulib */
     flags = fcntl(ioctl_fd, F_GETFD);
     ERR_THROW(flags < 0, ncf, EINTERNAL, "failed to get flags for ioctl socket");
 
@@ -719,6 +716,7 @@ int dutil_put_aug(struct netcf *ncf, const char *aug_xml, char **ncf_xml) {
     xmlFreeDoc(aug_doc);
     return result;
 }
+
 
 static void add_type_specific_info(struct netcf *ncf,
                                    const char *ifname, int ifindex,

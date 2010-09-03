@@ -22,6 +22,7 @@
 
 #include <config.h>
 #include <internal.h>
+
 #include <augeas.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -361,9 +362,6 @@ static int list_interfaces(struct netcf *ncf, char ***intf) {
  * only installed, but not used)
  */
 static void bridge_physdevs(struct netcf *ncf) {
-#ifdef WIN32
-    return;
-#endif
     struct augeas *aug = NULL;
     char *path = NULL, *p = NULL;
     const char *argv[5];
@@ -502,11 +500,11 @@ int drv_init(struct netcf *ncf) {
 
     bridge_physdevs(ncf);
     ERR_BAIL(ncf);
+
     /* open a socket for interface ioctls */
     ncf->driver->ioctl_fd = init_ioctl_fd(ncf);
     if (ncf->driver->ioctl_fd < 0)
         goto error;
-
     if (netlink_init(ncf) < 0)
         goto error;
     return 0;
@@ -538,9 +536,9 @@ static int list_interface_ids(struct netcf *ncf,
                               int maxnames, char **names,
                               unsigned int flags,
                               const char *id_attr) {
+    struct augeas *aug = NULL;
     int nint = 0, nmatches = 0, nqualified = 0, result = 0, r;
     char **intf = NULL, **matches = NULL;
-    struct augeas *aug = NULL;
 
     aug = get_augeas(ncf);
     ERR_BAIL(ncf);
@@ -560,6 +558,7 @@ static int list_interface_ids(struct netcf *ncf,
 
             r = aug_get(aug, matches[nmatches-1], &name);
             ERR_COND_BAIL(r < 0, ncf, EOTHER);
+
             if (!is_qualified) {
                 int is_active = if_is_active(ncf, name);
                 if ((is_active && (flags & NETCF_IFACE_ACTIVE))
@@ -912,6 +911,7 @@ static int bridge_slaves(struct netcf *ncf, const char *name, char ***slaves) {
     return -1;
 }
 
+
 /* For an interface NAME, remove the ifcfg-* files for that interface and
  * all its slaves. */
 static void rm_interface(struct netcf *ncf, const char *name) {
@@ -932,7 +932,6 @@ static void rm_interface(struct netcf *ncf, const char *name) {
 
     r = aug_rm(aug, path);
     ERR_COND_BAIL(r < 0, ncf, EOTHER);
-    goto error;
  error:
     FREE(path);
 }
@@ -1009,7 +1008,6 @@ struct netcf_if *drv_define(struct netcf *ncf, const char *xml_str) {
     char *name = NULL;
     struct netcf_if *result = NULL;
     int r;
-
     struct augeas *aug = get_augeas(ncf);
 
     ncf_xml = parse_xml(ncf, xml_str);
@@ -1053,9 +1051,9 @@ struct netcf_if *drv_define(struct netcf *ncf, const char *xml_str) {
 }
 
 int drv_undefine(struct netcf_if *nif) {
+    struct augeas *aug = NULL;
     struct netcf *ncf = nif->ncf;
     int r;
-    struct augeas *aug = NULL;
 
     aug = get_augeas(ncf);
     ERR_BAIL(ncf);
@@ -1077,13 +1075,13 @@ int drv_undefine(struct netcf_if *nif) {
 int drv_lookup_by_mac_string(struct netcf *ncf, const char *mac,
                              int maxifaces, struct netcf_if **ifaces)
 {
+    struct augeas *aug = NULL;
     char *path = NULL, *ifcfg = NULL;
     const char **names = NULL;
     int nmatches = 0;
     char **matches = NULL;
     int r;
     int result = -1;
-    struct augeas *aug = NULL;
 
     MEMZERO(ifaces, maxifaces);
 

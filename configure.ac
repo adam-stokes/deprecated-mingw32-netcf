@@ -50,10 +50,10 @@ NETCF_COMPILE_WARNINGS
 
 dnl Need to test if pkg-config exists
 PKG_PROG_PKG_CONFIG
+PKG_CHECK_MODULES([LIBAUGEAS], [augeas >= 0.5.0], [], [AC_DEFINE([HAVE_LIBAUGEAS], [], [Use augeas])])
 PKG_CHECK_MODULES([LIBXML], [libxml-2.0])
 PKG_CHECK_MODULES([LIBXSLT], [libxslt])
 PKG_CHECK_MODULES([LIBEXSLT], [libexslt])
-PKG_CHECK_MODULES([LIBAUGEAS], [augeas >= 0.5.0], [], [AC_DEFINE([HAVE_LIBAUGEAS], [], [Use augeas])])
 PKG_CHECK_MODULES([LIBNL], [libnl-1], [], [AC_DEFINE([HAVE_LIBNL], [], [Use netlink])])
 
 NETCF_CHECK_READLINE

@@ -159,7 +159,6 @@ void run1(struct netcf *ncf, const char *prog, const char *arg);
 
 #endif
 
-
 /*
  * Local variables:
  *  indent-tabs-mode: nil

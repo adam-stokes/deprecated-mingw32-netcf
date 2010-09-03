@@ -793,7 +793,6 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
 #endif
     }
-
     readline_init();
     if (optind < argc) {
         /* Run a single command */

@@ -188,6 +188,7 @@ void ncf_if_free(struct netcf_if *);
 int ncf_error(struct netcf *, const char **errmsg, const char **details);
 #endif
 
+
 /*
  * Local variables:
  *  indent-tabs-mode: nil

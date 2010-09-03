@@ -21,7 +21,7 @@ WIN32LIB= -liphlpapi -ldnsapi
 DRIVER_SOURCES = netcf_win.h netcf_win.c
 else
 DRIVER_SOURCES = drv_initscripts.c dutil.h dutil.c \
-	dutil_linux.h dutil_linux.c
+     dutil_linux.h dutil_linux.c
 endif
 
 BUILT_SOURCES = datadir.h netcf.syms
