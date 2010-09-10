@@ -109,7 +109,12 @@ int ncf_init(struct netcf **ncf, const char *root) {
     if ((*ncf)->data_dir == NULL)
         (*ncf)->data_dir = NETCF_DATADIR "/netcf";
     (*ncf)->debug = getenv("NETCF_DEBUG") != NULL;
+#ifdef WIN32
+    return 0;
+#else
+    /* Needs investigation on WIN32 */
     return drv_init(*ncf);
+#endif
  oom:
     ncf_close(*ncf);
     *ncf = NULL;
@@ -159,12 +164,16 @@ struct netcf_if * ncf_lookup_by_name(struct netcf *ncf, const char *name) {
     return drv_lookup_by_name(ncf, name);
 }
 
+#ifdef WIN32
+int ncf_lookup_by_mac_string() { return -1; }
+#else
 int
 ncf_lookup_by_mac_string(struct netcf *ncf, const char *mac,
                          int maxifaces, struct netcf_if **ifaces) {
     API_ENTRY(ncf);
     return drv_lookup_by_mac_string(ncf, mac, maxifaces, ifaces);
 }
+#endif
 
 /*
  * Define/start/stop/undefine interfaces
@@ -188,10 +197,15 @@ const char *ncf_if_mac_string(struct netcf_if *nif) {
 }
 
 /* Delete the definition */
+#ifdef WIN32
+/* No mingw implementation */
+int ncf_if_undefine() { return -1; };
+#else
 int ncf_if_undefine(struct netcf_if *nif) {
     API_ENTRY(nif->ncf);
     return drv_undefine(nif);
 }
+#endif
 
 /* Bring the interface up */
 int ncf_if_up(struct netcf_if *nif) {
@@ -210,28 +224,43 @@ int ncf_if_down(struct netcf_if *nif) {
 /* Produce an XML description for the interface, in the same format that
  * NCF_DEFINE expects
  */
+#ifdef WIN32
+/* No mingw implementation */
+char *ncf_if_xml_desc() { return NULL; }
+#else
 char *ncf_if_xml_desc(struct netcf_if *nif) {
     API_ENTRY(nif->ncf);
     return drv_xml_desc(nif);
 }
+#endif
 
 /* Produce an XML description of the current live state of the
  * interface, in the same format that NCF_DEFINE expects, but
  * potentially with extra info not contained in the static config (ie
  * the current IP address of an interface that uses DHCP)
  */
+#ifdef WIN32
+/* No mingw implementation */
+char *ncf_if_xml_state() { return NULL; }
+#else
 char *ncf_if_xml_state(struct netcf_if *nif) {
     API_ENTRY(nif->ncf);
     return drv_xml_state(nif);
 }
+#endif
 
 /* Report various status info about the interface as bits in
  * "flags". Returns 0 on success, -1 on failure
  */
+#ifdef WIN32
+/* No mingw implementation */
+int ncf_if_status() { return -1; }
+#else
 int ncf_if_status(struct netcf_if *nif, unsigned int *flags) {
     API_ENTRY(nif->ncf);
     return drv_if_status(nif, flags);
 }
+#endif
 
 /* Release any resources used by this NETCF_IF; the pointer is invalid
  * after this call
@@ -258,17 +287,27 @@ int ncf_error(struct netcf *ncf, const char **errmsg, const char **details) {
 /*
  * Test interface
  */
+#ifdef WIN32
+/* No mingw implementation */
+int ncf_get_aug() { return -1; }
+#else
 int ncf_get_aug(struct netcf *ncf, const char *ncf_xml, char **aug_xml) {
     API_ENTRY(ncf);
 
     return drv_get_aug(ncf, ncf_xml, aug_xml);
 }
+#endif
 
+#ifdef WIN32
+/* No mingw implementation */
+int ncf_put_aug() { return -1; }
+#else
 int ncf_put_aug(struct netcf *ncf, const char *aug_xml, char **ncf_xml) {
     API_ENTRY(ncf);
 
     return drv_put_aug(ncf, aug_xml, ncf_xml);
 }
+#endif
 
 #ifndef WIN32
 /* Do not see any other way around this as there is no

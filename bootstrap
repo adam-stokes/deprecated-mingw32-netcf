@@ -58,28 +58,28 @@ gnulib_tool=$GNULIB_SRCDIR/gnulib-tool
 <$gnulib_tool || exit
 
 modules='
-c-ctype
-read-file
-safe-alloc
-warnings
-sys_wait
-sigaction
-pthread
-unistd
-getdtablesize
-signal
 arpa_inet
-sys_ioctl
-getopt-posix
-string
-sys_socket
-socket
-netinet_in
-vasprintf
+c-ctype
+close
 fcntl
+getdtablesize
+getopt-posix
 inet_ntop
 inet_pton
-close
+netinet_in
+pthread
+read-file
+safe-alloc
+sigaction
+signal
+socket
+string
+sys_ioctl
+sys_socket
+sys_wait
+unistd
+vasprintf
+warnings
 '
 
 # Tell gnulib to:
@@ -94,4 +94,5 @@ $gnulib_tool			\
   --tests-base=gnulib/tests	\
   --aux-dir=build/aux           \
   --quiet                       \
+  --libtool                     \
   --import $modules

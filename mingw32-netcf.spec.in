@@ -3,6 +3,7 @@
 %global _use_internal_dependency_generator 0
 %global __find_requires %{_mingw32_findrequires}
 %global __find_provides %{_mingw32_findprovides}
+%define __debug_install_post %{_mingw32_debug_install_post}
 
 Name:           mingw32-netcf
 Version:        @VERSION@
@@ -53,20 +54,17 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %{_mingw32_bindir}/ncftool.exe
 %{_mingw32_bindir}/libnetcf-1.dll
+%{_mingw32_includedir}/*.h
 %{_mingw32_libdir}/pkgconfig/netcf.pc
-%{_mingw32_libdir}/libnetcf-1.dll.a
-%{_mingw32_libdir}/libnetcf-1.la
+%{_mingw32_libdir}/libnetcf.dll.a
+%{_mingw32_libdir}/libnetcf.la
 %{_mingw32_datadir}
 
 %doc AUTHORS COPYING NEWS
 
 %changelog
-* Mon Sep 1 2010 Adam Stokes <ajs@redhat.com> - 0.1.6-2
-- Update spec to not require .dll.a or *.la
-- Fixed building of DLL
-
-* Thu Apr 16 2010 Laine Stump <laine@redhat.com> - 0.1.6-1
-- New version
+* Mon Sep 1 2010 Adam Stokes <ajs@redhat.com> - 0.1.6-1
+- MinGW Port
 
 * Mon Nov 30 2009 David Lutterkort <lutter@redhat.com> - 0.1.5-1
 - New version

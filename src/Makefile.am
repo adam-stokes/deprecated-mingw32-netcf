@@ -5,7 +5,7 @@ GNULIB_CFLAGS= -I $(top_srcdir)/gnulib/lib
 AM_CFLAGS = $(NETCF_CFLAGS) $(GNULIB_CFLAGS) $(WARN_CFLAGS) \
   $(LIBXML_CFLAGS) $(LIBXSLT_CFLAGS) $(LIBAUGEAS_CFLAGS)
 
-include_HEADERS = netcf.h
+include_HEADERS = netcf.h netcf_win.h
 
 lib_LTLIBRARIES = libnetcf.la
 
@@ -32,13 +32,11 @@ libnetcf_la_SOURCES = netcf.h netcf.c internal.h \
      ref.h list.h \
      xslt_ext.c $(DRIVER_SOURCES)
 libnetcf_la_LDFLAGS = -Wl,--version-script=netcf.syms \
-     -version-info $(LIBNETCF_VERSION_INFO) @MINGW_EXTRA_LDFLAGS@
+     -version-info $(LIBNETCF_VERSION_INFO) -no-undefined
 libnetcf_la_LIBADD = $(NETCF_LIBDEPS) $(GNULIB)
 if PLATFORM_WIN32
 libnetcf_la_LIBADD += $(WIN32LIB)
 endif
-
-#libnetcf_la_DEPENDENCIES = $(libnetcf_la_LIBADD) netcf.syms
 
 ncftool_SOURCES = ncftool.c
 ncftool_LDADD = libnetcf.la $(READLINE_LIBS) $(GNULIB)
