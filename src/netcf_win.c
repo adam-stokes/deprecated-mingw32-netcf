@@ -13,7 +13,7 @@ PMIB_IPADDRTABLE _get_ip_addr_table(PMIB_IPADDRTABLE ipAddrTable) {
     DWORD r = 0;
     DWORD buf = 0;
 
-    ipAddrTable = (PMIB_IPADDRTABLE) sizeof (MIB_IPADDRTABLE);
+    ipAddrTable = (PMIB_IPADDRTABLE) malloc(sizeof (MIB_IPADDRTABLE));
     if (GetIpAddrTable(ipAddrTable, &buf, 0) == ERROR_INSUFFICIENT_BUFFER) {
 	free(ipAddrTable);
 	ipAddrTable = (PMIB_IPADDRTABLE) malloc(buf);
@@ -213,18 +213,6 @@ void drv_close(struct netcf *ncf) {
 #ifdef WIN32
     return;
 #endif
-}
-
-int xasprintf(char **strp, const char *format, ...) {
-  va_list args;
-  int result;
-
-  va_start (args, format);
-  result = vasprintf (strp, format, args);
-  va_end (args);
-  if (result < 0)
-      *strp = NULL;
-  return result;
 }
 
 /* Create a new netcf if instance for interface NAME */

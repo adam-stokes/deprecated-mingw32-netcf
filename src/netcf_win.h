@@ -42,9 +42,7 @@
 #include "ref.h"
 #include "list.h"
 
-
 struct netcf_if *make_netcf_if(struct netcf *ncf, char *name);
-int xasprintf(char **strp, const char *format, ...);
 
 /* structure return of interface table */
 PMIB_IFTABLE _get_if_table(PMIB_IFTABLE intfTable);
