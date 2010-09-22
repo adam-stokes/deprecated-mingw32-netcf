@@ -8,7 +8,7 @@
 Name:           mingw32-netcf
 Version:        @VERSION@
 Release:        1%{?dist}%{?extra_release}
-Summary:        Cross-platform network configuration library
+Summary:        MinGW network configuration library
 
 Group:          System Environment/Libraries
 License:        LGPLv2+
@@ -19,12 +19,15 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  mingw32-filesystem >= 56
 BuildRequires:  mingw32-readline
 BuildRequires:  mingw32-binutils
-BuildRequires:  mingw32-libxml2 
+BuildRequires:  mingw32-libxml2
 BuildRequires:  mingw32-libxslt
 BuildRequires:  mingw32-gcc
 BuildRequires:  mingw32-gettext
 BuildRequires:  mingw32-w32api
+BuildRequires:  gettext
 Requires:       pkgconfig
+
+BuildArch:	noarch
 
 %description
 A library for modifying the network configuration of a system. Network
@@ -38,13 +41,12 @@ MinGW cross-compiled Windows library.
 %setup -q
 
 %build
-PATH=%{_mingw32_bindir}:$PATH \
 %{_mingw32_configure} --disable-static
 make %{?_smp_mflags}
 
 %install
 rm -rf $RPM_BUILD_ROOT
-make install DESTDIR=$RPM_BUILD_ROOT INSTALL="%{__install} -p"
+make install DESTDIR=$RPM_BUILD_ROOT
 rm -rf $RPM_BUILD_ROOT%{_mingw32_datadir}/netcf
 
 %clean
@@ -58,10 +60,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mingw32_libdir}/pkgconfig/netcf.pc
 %{_mingw32_libdir}/libnetcf.dll.a
 %{_mingw32_libdir}/libnetcf.la
-%{_mingw32_datadir}
 
 %doc AUTHORS COPYING NEWS
 
 %changelog
-* Mon Sep 1 2010 Adam Stokes <ajs@redhat.com> - 0.1.6-1
+* Wed Sep 22 2010 Adam Stokes <ajs@redhat.com> - 0.1.6-1
 - MinGW Port
