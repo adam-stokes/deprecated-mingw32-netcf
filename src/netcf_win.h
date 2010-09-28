@@ -24,16 +24,14 @@
 #define NETCF_WIN_H
 
 #ifndef WINVER
-#define WINVER 0x0501
+# define WINVER 0x0501
 #endif
 
-#include <config.h>
 #include "internal.h"
 
 #include <stdbool.h>
 #include <string.h>
 #include <windows.h>
-#include <winsock.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
@@ -44,14 +42,6 @@
 
 struct netcf_if *make_netcf_if(struct netcf *ncf, char *name);
 
-/* structure return of interface table */
-PMIB_IFTABLE _get_if_table(PMIB_IFTABLE intfTable);
-
-/* structure return of adapter info */
-PIP_ADAPTER_ADDRESSES _get_ip_adapter_info(PIP_ADAPTER_ADDRESSES addrList);
-
-PMIB_IPADDRTABLE _get_ip_addr_table(PMIB_IPADDRTABLE ipAddrTable);
-
 /* Reports ip addresses */
 int drv_if_ipaddresses(struct netcf_if *nif, char *ipBuf);
 
@@ -59,9 +49,9 @@ int drv_if_ipaddresses(struct netcf_if *nif, char *ipBuf);
 int drv_add_ip_address(struct netcf_if *nif, char *ipAddr,
 		       char *netmask);
 /* remove ip address from device */
-int drv_rm_ip_address(struct netcf_if *nif, ULONG NTEContext);
+int drv_rm_ip_address(struct netcf_if *nif, uint64_t NTEContext);
 /* add dns server to device */
-int drv_add_dns_server(struct netcf_if *nif, ULONG NTEContext);
+int drv_add_dns_server(struct netcf_if *nif, uint64_t NTEContext);
 /* rm dns server from device */
 int drv_rm_dns_server(struct netcf_if *nif);
 /* list dns server */
