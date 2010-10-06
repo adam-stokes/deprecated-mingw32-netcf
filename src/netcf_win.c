@@ -78,7 +78,7 @@ static PIP_ADAPTER_ADDRESSES get_ip_adapter_info(void) {
 }
 
 /* Create a new netcf if instance for interface NAME */
-struct netcf_if *make_netcf_if(struct netcf *ncf, const char *name) {
+struct netcf_if *make_netcf_if(struct netcf *ncf, char *name) {
     int r;
     struct netcf_if *result = NULL;
 

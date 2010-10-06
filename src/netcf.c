@@ -140,8 +140,8 @@ int ncf_close(struct netcf *ncf) {
     free(ncf->driver);
 #else
     drv_close(ncf);
-#endif
     unref(ncf, netcf);
+#endif
     return 0;
  error:
     return -1;

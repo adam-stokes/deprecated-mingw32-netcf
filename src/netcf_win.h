@@ -40,8 +40,10 @@
 #include "ref.h"
 #include "list.h"
 
+/* Like asprintf, but set *STRP to NULL on error */
+ATTRIBUTE_FORMAT(printf, 2, 3)
 int xasprintf(char **strp, const char *format, ...);
-struct netcf_if *make_netcf_if(struct netcf *ncf, const char *name);
+struct netcf_if *make_netcf_if(struct netcf *ncf, char *name);
 
 /* Reports ip addresses */
 int drv_if_ipaddresses(struct netcf_if *nif, char *ipBuf);
