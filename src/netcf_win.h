@@ -40,7 +40,8 @@
 #include "ref.h"
 #include "list.h"
 
-struct netcf_if *make_netcf_if(struct netcf *ncf, char *name);
+int xasprintf(char **strp, const char *format, ...);
+struct netcf_if *make_netcf_if(struct netcf *ncf, const char *name);
 
 /* Reports ip addresses */
 int drv_if_ipaddresses(struct netcf_if *nif, char *ipBuf);

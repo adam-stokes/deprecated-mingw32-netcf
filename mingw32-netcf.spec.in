@@ -64,5 +64,5 @@ rm -rf $RPM_BUILD_ROOT
 %doc AUTHORS COPYING NEWS
 
 %changelog
-* Wed Sep 22 2010 Adam Stokes <ajs@redhat.com> - 0.1.6-1
+* Wed Oct 6 2010 Adam Stokes <ajs@redhat.com> - 0.1.7-1
 - MinGW Port

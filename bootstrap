@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -x
 
 usage() {
   echo >&2 "\
@@ -67,8 +67,6 @@ modules='
 arpa_inet
 c-ctype
 close
-fcntl
-getdtablesize
 getopt-posix
 inet_ntop
 inet_pton
@@ -76,7 +74,7 @@ netinet_in
 pthread
 read-file
 safe-alloc
-sigaction
+setenv
 signal
 socket
 string
@@ -94,6 +92,7 @@ warnings
 #   put *.[ch] files in new gnulib/lib/ dir.
 
 $gnulib_tool			\
+  --lgpl=2			\
   --with-tests			\
   --m4-base=gnulib/m4		\
   --source-base=gnulib/lib	\

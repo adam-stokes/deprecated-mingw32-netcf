@@ -677,11 +677,7 @@ static void parse_opts(int argc, char **argv) {
     while ((opt = getopt_long(argc, argv, "+dhr:", options, &idx)) != -1) {
         switch(opt) {
         case 'd':
-#ifdef WIN32
-            _putenv("NETCF_DEBUG=1");
-#else
             setenv("NETCF_DEBUG", "1", 1);
-#endif
             break;
         case 'h':
             usage();
@@ -788,10 +784,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Failed to initialize netcf\n");
         if (ncf != NULL)
             print_netcf_error();
-#ifndef WIN32
-        // FIXME: Need to find out why ncf_init is croaking
         exit(EXIT_FAILURE);
-#endif
     }
     readline_init();
     if (optind < argc) {

@@ -36,12 +36,15 @@
 #include "internal.h"
 #include "netcf.h"
 #ifdef WIN32
-#include "netcf_win.h"
+# include "netcf_win.h"
 #else
-#include "dutil.h"
+# include "dutil.h"
 #endif
 
 /* Clear error code and details */
+#ifdef WIN32
+#define API_ENTRY(ncf) NULL;
+#else
 #define API_ENTRY(ncf)                          \
     do {                                        \
         (ncf)->errcode = NETCF_NOERROR;         \
@@ -49,6 +52,7 @@
         if (ncf->driver != NULL)                \
             drv_entry(ncf);                     \
     } while(0);
+#endif
 
 /* Human-readable error messages. This array is indexed by NETCF_ERRCODE_T */
 static const char *const errmsgs[] = {
@@ -91,12 +95,15 @@ int ncf_init(struct netcf **ncf, const char *root) {
     *ncf = NULL;
     if (make_ref(*ncf) < 0)
         goto oom;
-    if (root == NULL)
+    if (root == NULL) {
 #ifdef WIN32
-        root = "c:\\";
+        root = getenv("SYSTEMDRIVE");
+        if (!root)
+            root = "c:";
 #else
         root = "/";
 #endif
+    }
     if (root[strlen(root)-1] == '/') {
         (*ncf)->root = strdup(root);
     } else {
@@ -129,7 +136,11 @@ int ncf_close(struct netcf *ncf) {
 
     ERR_COND_BAIL(ncf->ref > 1, ncf, EINUSE);
 
+#ifdef WIN32
+    free(ncf->driver);
+#else
     drv_close(ncf);
+#endif
     unref(ncf, netcf);
     return 0;
  error:
@@ -165,7 +176,10 @@ struct netcf_if * ncf_lookup_by_name(struct netcf *ncf, const char *name) {
 }
 
 #ifdef WIN32
-int ncf_lookup_by_mac_string() { return -1; }
+int ncf_lookup_by_mac_string(struct netcf *ncf, const char *mac,
+                             int maxifaces, struct netcf_if **ifaces) {
+    return -1;
+}
 #else
 int
 ncf_lookup_by_mac_string(struct netcf *ncf, const char *mac,
@@ -180,11 +194,19 @@ ncf_lookup_by_mac_string(struct netcf *ncf, const char *mac,
  */
 
 /* Define a new interface */
+#ifdef WIN32
+struct netcf_if *
+ncf_define(struct netcf *ncf, const char *xml) {
+    API_ENTRY(ncf);
+    return ncf;
+}
+#else
 struct netcf_if *
 ncf_define(struct netcf *ncf, const char *xml) {
     API_ENTRY(ncf);
     return drv_define(ncf, xml);
 }
+#endif
 
 const char *ncf_if_name(struct netcf_if *nif) {
     API_ENTRY(nif->ncf);
@@ -199,7 +221,9 @@ const char *ncf_if_mac_string(struct netcf_if *nif) {
 /* Delete the definition */
 #ifdef WIN32
 /* No mingw implementation */
-int ncf_if_undefine() { return -1; };
+int ncf_if_undefine(struct netcf_if *nif) {
+    return -1;
+}
 #else
 int ncf_if_undefine(struct netcf_if *nif) {
     API_ENTRY(nif->ncf);
@@ -226,7 +250,9 @@ int ncf_if_down(struct netcf_if *nif) {
  */
 #ifdef WIN32
 /* No mingw implementation */
-char *ncf_if_xml_desc() { return NULL; }
+char *ncf_if_xml_desc(struct netcf_if *nif) {
+    return NULL;
+}
 #else
 char *ncf_if_xml_desc(struct netcf_if *nif) {
     API_ENTRY(nif->ncf);
@@ -241,7 +267,9 @@ char *ncf_if_xml_desc(struct netcf_if *nif) {
  */
 #ifdef WIN32
 /* No mingw implementation */
-char *ncf_if_xml_state() { return NULL; }
+char *ncf_if_xml_state(struct netcf_if *nif) {
+    return NULL;
+}
 #else
 char *ncf_if_xml_state(struct netcf_if *nif) {
     API_ENTRY(nif->ncf);
@@ -254,7 +282,9 @@ char *ncf_if_xml_state(struct netcf_if *nif) {
  */
 #ifdef WIN32
 /* No mingw implementation */
-int ncf_if_status() { return -1; }
+int ncf_if_status(struct netcf_if *nif, unsigned int *flags) {
+    return -1;
+}
 #else
 int ncf_if_status(struct netcf_if *nif, unsigned int *flags) {
     API_ENTRY(nif->ncf);
@@ -289,7 +319,9 @@ int ncf_error(struct netcf *ncf, const char **errmsg, const char **details) {
  */
 #ifdef WIN32
 /* No mingw implementation */
-int ncf_get_aug() { return -1; }
+int ncf_get_aug(struct netcf *ncf, const char *ncf_xml, char **aug_xml) {
+    return -1;
+}
 #else
 int ncf_get_aug(struct netcf *ncf, const char *ncf_xml, char **aug_xml) {
     API_ENTRY(ncf);
@@ -300,7 +332,9 @@ int ncf_get_aug(struct netcf *ncf, const char *ncf_xml, char **aug_xml) {
 
 #ifdef WIN32
 /* No mingw implementation */
-int ncf_put_aug() { return -1; }
+int ncf_put_aug(struct netcf *ncf, const char *aug_xml, char **ncf_xml) {
+    return -1;
+}
 #else
 int ncf_put_aug(struct netcf *ncf, const char *aug_xml, char **ncf_xml) {
     API_ENTRY(ncf);
