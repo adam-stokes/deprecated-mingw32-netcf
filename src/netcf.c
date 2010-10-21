@@ -93,8 +93,10 @@ void free_netcf_if(struct netcf_if *nif) {
 
 int ncf_init(struct netcf **ncf, const char *root) {
     *ncf = NULL;
+#ifndef WIN32
     if (make_ref(*ncf) < 0)
         goto oom;
+#endif
     if (root == NULL) {
 #ifdef WIN32
         root = getenv("SYSTEMDRIVE");
