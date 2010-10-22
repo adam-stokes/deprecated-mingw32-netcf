@@ -1,3 +1,25 @@
+/*
+ * netcf-win.c: windows functions
+ *
+ * Copyright (C) 2010 Red Hat Inc.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
+ *
+ * Author: Adam Stokes <ajs@redhat.com>
+ */
+
 #include <config.h>
 #include <internal.h>
 
@@ -5,8 +27,8 @@
 #include <stdlib.h>
 #include "netcf_win.h"
 
-#define ADDR_BLOCK 5
-#define GAA_FLAGS ( GAA_FLAG_SKIP_DNS_SERVER | GAA_FLAG_SKIP_MULTICAST )
+#define MAX_TRIES 5
+#define GAA_FLAGS ( GAA_FLAG_SKIP_DNS_SERVER | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_ANYCAST)
 #define BUFSIZE 1024
 
 /* Like asprintf, but set *STRP to NULL on error */
@@ -57,26 +79,6 @@ static PMIB_IFTABLE get_if_table(void) {
     return NULL;
 }
 
-static PIP_ADAPTER_ADDRESSES get_ip_adapter_info(void) {
-    PIP_ADAPTER_ADDRESSES addrList = NULL;
-    ULONG bufferLength = 0;
-    DWORD r;
-    size_t i;
-
-    for(i = 0; i < ADDR_BLOCK; i++) {
-	r = GetAdaptersAddresses(AF_INET, GAA_FLAGS, NULL, addrList, &bufferLength);
-	if (r != ERROR_BUFFER_OVERFLOW) {
-	    break;
-	}
-	if (addrList != NULL) {
-	    free(addrList);
-	}
-	if ((addrList = malloc(sizeof(bufferLength))) == NULL)
-	    return addrList;
-    }
-    return addrList;
-}
-
 /* Create a new netcf if instance for interface NAME */
 struct netcf_if *make_netcf_if(struct netcf *ncf, char *name) {
     int r;
@@ -93,32 +95,58 @@ struct netcf_if *make_netcf_if(struct netcf *ncf, char *name) {
     return result;
 }
 
-static int list_interface_ids(struct netcf *ncf ATTRIBUTE_UNUSED,
-				  int maxnames,
-				  char **names, unsigned int flags,
-				  const char *id_attr ATTRIBUTE_UNUSED) {
-    unsigned int nint = 0;
+static int list_interface_ids(struct netcf *ncf,
+			      int maxnames,
+			      char **names, unsigned int flags,
+			      const char *id_attr) {
+    size_t nint = 0, tries = 0;
+    PIP_ADAPTER_ADDRESSES adapter = NULL , cAddress = NULL;
+    ULONG bufferLength = 0;
+    DWORD r;
 
-    PIP_ADAPTER_ADDRESSES addrList = NULL;
-    PIP_ADAPTER_ADDRESSES adapterp = NULL;
-    adapterp = get_ip_adapter_info();
-    for (nint = 0; adapterp != NULL && nint < maxnames; nint++) {
+    bufferLength = sizeof(IP_ADAPTER_ADDRESSES);
+
+    do {
+	adapter = malloc(bufferLength);
+	if (adapter == NULL)
+	    goto error;
+
+	r = GetAdaptersAddresses(AF_UNSPEC,
+				 GAA_FLAGS,
+				 NULL,
+				 adapter,
+				 &bufferLength);
+
+	if (r == ERROR_BUFFER_OVERFLOW) {
+	    free(adapter);
+	    adapter = NULL;
+	} else {
+	    break;
+	}
+	tries++;
+    } while ((r == ERROR_BUFFER_OVERFLOW) && (tries < MAX_TRIES));
+
+    if (r == NO_ERROR)
+	cAddress = adapter;
+
+    while(cAddress) {
 	if (names) {
 	    char name[BUFSIZE];
-	    WideCharToMultiByte(CP_UTF8, 0, adapterp->FriendlyName,
+	    WideCharToMultiByte(CP_UTF8, 0, cAddress->FriendlyName,
 				-1, name, sizeof(name), NULL, NULL);
 	    if ((names[nint] = strdup(name)) == NULL)
 		goto error;
 	}
-	maxnames++;
-	adapterp = adapterp->Next;
+	nint++;
+	cAddress = cAddress->Next;
     }
     return nint;
  error:
-    for (nint = 0; nint < maxnames; nint++) {
+    while(nint > 0) {
 	free(names[nint]);
+	nint--;
     }
-    free(addrList);
+    free(adapter);
     return -1;
 }
 
@@ -136,54 +164,112 @@ int drv_num_of_interfaces(struct netcf *ncf, unsigned int flags) {
 
 struct netcf_if *drv_lookup_by_name(struct netcf *ncf, const char *name) {
     struct netcf_if *nif = NULL;
-    unsigned int nint = 0;
-    PIP_ADAPTER_ADDRESSES adapterp = NULL;
+    DWORD r;
+    size_t tries = MAX_TRIES;
+    ULONG bufferLength = 0;
+    PIP_ADAPTER_ADDRESSES adapter = NULL, cAddress = NULL;
     char *nameDup = NULL;
 
-    adapterp = get_ip_adapter_info();
-    for (nint = 0; adapterp != NULL; nint++) {
+    bufferLength = sizeof(IP_ADAPTER_ADDRESSES);
+
+    do {
+	adapter = malloc(bufferLength);
+	if (adapter == NULL)
+	    goto error;
+
+	r = GetAdaptersAddresses(AF_UNSPEC,
+				 GAA_FLAGS,
+				 NULL,
+				 adapter,
+				 &bufferLength);
+
+	if (r == ERROR_BUFFER_OVERFLOW) {
+	    free(adapter);
+	    adapter = NULL;
+	} else {
+	    break;
+	}
+	tries++;
+    } while ((r == ERROR_BUFFER_OVERFLOW) && (tries < MAX_TRIES));
+
+    cAddress = adapter;
+    while(cAddress) {
 	if (name) {
 	    char wName[BUFSIZE];
-	    WideCharToMultiByte(CP_UTF8, 0, adapterp->FriendlyName,
+	    WideCharToMultiByte(CP_UTF8, 0, cAddress->FriendlyName,
 				-1, wName, sizeof(wName), NULL, NULL);
 	    if (strcmp(wName, name) == 0) {
-		nameDup = strdup(wName);
+		nameDup = strdup(name);
+		ERR_NOMEM(nameDup == NULL, ncf);
+
 		nif = make_netcf_if(ncf, nameDup);
+		ERR_BAIL(ncf);
 	    }
 	}
-	adapterp = adapterp->Next;
+	cAddress = cAddress->Next;
     }
+
+    return nif;
+ error:
     free(nameDup);
+    free(adapter);
     return nif;
 }
 
 
 const char *drv_mac_string(struct netcf_if *nif) {
-    PIP_ADAPTER_ADDRESSES adapterp = NULL;
-    adapterp = get_ip_adapter_info();
-    int r;
+    PIP_ADAPTER_ADDRESSES adapter = NULL, cAddress = NULL;
+    ULONG bufferLength = 0;
+    DWORD r;
+    size_t tries = MAX_TRIES;
     char *mac;
 
-    while(adapterp != NULL) {
+    bufferLength = sizeof(IP_ADAPTER_ADDRESSES);
+
+    do {
+	adapter = malloc(bufferLength);
+	if (adapter == NULL)
+	    goto error;
+
+	r = GetAdaptersAddresses(AF_UNSPEC,
+				 GAA_FLAGS,
+				 NULL,
+				 adapter,
+				 &bufferLength);
+
+	if (r == ERROR_BUFFER_OVERFLOW) {
+	    free(adapter);
+	    adapter = NULL;
+	} else {
+	    break;
+	}
+	tries++;
+    } while ((r == ERROR_BUFFER_OVERFLOW) && (tries < MAX_TRIES));
+
+    cAddress = adapter;
+    while(cAddress) {
 	char wName[BUFSIZE];
-	WideCharToMultiByte(CP_UTF8, 0, adapterp->FriendlyName,
+	WideCharToMultiByte(CP_UTF8, 0, cAddress->FriendlyName,
 			    -1, wName, sizeof(wName), NULL, NULL);
        	if (strcmp(wName,nif->name) == 0) {
-	    if (adapterp->PhysicalAddressLength >= 6)
+	    if (cAddress->PhysicalAddressLength >= 6)
 		continue; /* just want ethernet for now */
-	    if ((r = asprintf(&mac, "%02X:%02X:%02X:%02X:%02X:%02X",
-			      adapterp->PhysicalAddress[0],
-			      adapterp->PhysicalAddress[1],
-			      adapterp->PhysicalAddress[2],
-			      adapterp->PhysicalAddress[3],
-			      adapterp->PhysicalAddress[4],
-			      adapterp->PhysicalAddress[5])) < 0)
+	    if ((asprintf(&mac, "%02X:%02X:%02X:%02X:%02X:%02X",
+			  cAddress->PhysicalAddress[0],
+			  cAddress->PhysicalAddress[1],
+			  cAddress->PhysicalAddress[2],
+			  cAddress->PhysicalAddress[3],
+			  cAddress->PhysicalAddress[4],
+			  cAddress->PhysicalAddress[5])) < 0)
 		return NULL;
 	    if ((nif->mac = strdup(mac)) != NULL)
 		return nif->mac;
 	}
-	adapterp = adapterp->Next;
+	cAddress = cAddress->Next;
     }
+
+ error:
+    free(adapter);
     return NULL;
 }
 
@@ -192,7 +278,6 @@ int drv_if_down(struct netcf_if *nif) {
     PMIB_IFROW intRow;
     int i;
 
-    intfTable = get_if_table();
     if (intfTable != NULL) {
 	for (i = 0; i < intfTable->dwNumEntries; i++) {
 	    intRow = (PMIB_IFROW) & intfTable->table[i];
@@ -219,7 +304,6 @@ int drv_if_up(struct netcf_if *nif) {
     PMIB_IFROW intRow;
     int i;
 
-    intfTable = get_if_table();
     if (intfTable != NULL) {
 	for (i = 0; i < (int) intfTable->dwNumEntries; i++) {
 	    intRow = (PMIB_IFROW) & intfTable->table[i];
@@ -247,10 +331,6 @@ int drv_if_ipaddresses(struct netcf_if *nif, char *ipBuf) {
     IN_ADDR ipAddr;
     int i;
 
-    if ((ipAddrTable = get_ip_addr_table()) == NULL)
-	return -1;
-
-    adapterp = get_ip_adapter_info();
     if (adapterp != NULL) {
 	while(adapterp) {
 	    if (adapterp->OperStatus != 1)
@@ -300,7 +380,6 @@ int drv_add_ip_address(struct netcf_if *nif, char *ipAddr, char *netmask) {
 	return -1;
 
 
-    ipAddrTable = get_ip_addr_table();
     if (ipAddrTable != NULL) {
 	for(i=0;i<ipAddrTable->dwNumEntries;i++) {
 	    ifIndex = ipAddrTable->table[i].dwIndex;
