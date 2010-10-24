@@ -242,6 +242,7 @@ const char *drv_mac_string(struct netcf_if *nif) {
 }
 
 int drv_if_down(struct netcf_if *nif) {
+    struct netcf *ncf = nif->ncf;
     MIB_IFTABLE *intf = NULL;
     MIB_IFROW *interfaceRow;
     size_t tries = 0;
@@ -264,7 +265,7 @@ int drv_if_down(struct netcf_if *nif) {
 	tries++;
     } while ((r == ERROR_INSUFFICIENT_BUFFER) && (tries < MAX_TRIES));
 
-    if (intfTable != NULL) {
+    if (intf != NULL) {
 	for (int i = 0; i < intf->dwNumEntries; i++) {
 	    interfaceRow = (MIB_IFROW *) & intf->table[i];
 	    WideCharToMultiByte(CP_UTF8, 0, interfaceRow->wszName,
@@ -276,15 +277,18 @@ int drv_if_down(struct netcf_if *nif) {
 	    }
 	}
 	/* Unable to shutdown interface */
-	free(intf);
-	return -1;
+	goto error;
     }
  done:
     free(intf);
     return 0;
+ error:
+    free(intf);
+    return -1;
 }
 
 int drv_if_up(struct netcf_if *nif) {
+    struct netcf *ncf = nif->ncf;
     MIB_IFTABLE *intf = NULL;
     MIB_IFROW *interfaceRow;
     size_t tries = 0;
@@ -307,7 +311,7 @@ int drv_if_up(struct netcf_if *nif) {
 	tries++;
     } while ((r == ERROR_INSUFFICIENT_BUFFER) && (tries < MAX_TRIES));
 
-    if (intfTable != NULL) {
+    if (intf != NULL) {
 	for (int i = 0; i < intf->dwNumEntries; i++) {
 	    interfaceRow = (MIB_IFROW *) & intf->table[i];
 	    WideCharToMultiByte(CP_UTF8, 0, interfaceRow->wszName,
@@ -319,12 +323,14 @@ int drv_if_up(struct netcf_if *nif) {
 	    }
 	}
 	/* Unable to shutdown interface */
-	free(intf);
-	return -1;
+	goto error;
     }
  done:
     free(intf);
     return 0;
+ error:
+    free(intf);
+    return -1;
 }
 
 int drv_if_ipaddresses(struct netcf_if *nif, char *ipBuf) {
