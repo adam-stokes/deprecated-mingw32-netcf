@@ -43,6 +43,8 @@
 /* Like asprintf, but set *STRP to NULL on error */
 ATTRIBUTE_FORMAT(printf, 2, 3)
 int xasprintf(char **strp, const char *format, ...);
+
+/* Create a new netcf if instance for interface NAME */
 struct netcf_if *make_netcf_if(struct netcf *ncf, char *name);
 
 /* Reports ip addresses */

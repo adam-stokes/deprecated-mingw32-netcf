@@ -28,7 +28,7 @@
 #include "netcf_win.h"
 
 #define MAX_TRIES 5
-#define GAA_FLAGS ( GAA_FLAG_SKIP_DNS_SERVER | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_ANYCAST)
+#define GAA_FLAGS ( GAA_FLAG_SKIP_DNS_SERVER | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_ANYCAST )
 #define BUFSIZE 1024
 
 /* Like asprintf, but set *STRP to NULL on error */
@@ -61,24 +61,6 @@ static PMIB_IPADDRTABLE get_ip_addr_table(void) {
     return NULL;
 }
 
-static PMIB_IFTABLE get_if_table(void) {
-    PMIB_IFTABLE intfTable = NULL;
-    DWORD bufferLength = 0;
-    DWORD r = 0;
-    if ((intfTable = malloc(sizeof(intfTable))) == NULL)
-	return NULL;
-
-    bufferLength = sizeof(MIB_IFTABLE);
-    if ((r = GetIfTable(intfTable, &bufferLength, FALSE)) == ERROR_INSUFFICIENT_BUFFER) {
-	free(intfTable);
-	if ((intfTable = malloc(sizeof(bufferLength))) == NULL)
-	    return NULL;
-    }
-    if (r == NO_ERROR)
-	return intfTable;
-    return NULL;
-}
-
 /* Create a new netcf if instance for interface NAME */
 struct netcf_if *make_netcf_if(struct netcf *ncf, char *name) {
     int r;
@@ -98,7 +80,7 @@ struct netcf_if *make_netcf_if(struct netcf *ncf, char *name) {
 static int list_interface_ids(struct netcf *ncf,
 			      int maxnames,
 			      char **names, unsigned int flags,
-			      const char *id_attr) {
+     			      const char *id_attr) {
     size_t nint = 0, tries = 0;
     PIP_ADAPTER_ADDRESSES adapter = NULL , cAddress = NULL;
     ULONG bufferLength = 0;
@@ -108,8 +90,7 @@ static int list_interface_ids(struct netcf *ncf,
 
     do {
 	adapter = malloc(bufferLength);
-	if (adapter == NULL)
-	    goto error;
+	ERR_NOMEM(adapter == NULL, ncf);
 
 	r = GetAdaptersAddresses(AF_UNSPEC,
 				 GAA_FLAGS,
@@ -134,12 +115,13 @@ static int list_interface_ids(struct netcf *ncf,
 	    char name[BUFSIZE];
 	    WideCharToMultiByte(CP_UTF8, 0, cAddress->FriendlyName,
 				-1, name, sizeof(name), NULL, NULL);
-	    if ((names[nint] = strdup(name)) == NULL)
-		goto error;
+	    names[nint] = strdup(name);
+	    ERR_NOMEM(names[nint] == NULL, ncf);
 	}
 	nint++;
 	cAddress = cAddress->Next;
     }
+    free(adapter);
     return nint;
  error:
     while(nint > 0) {
@@ -164,72 +146,59 @@ int drv_num_of_interfaces(struct netcf *ncf, unsigned int flags) {
 
 struct netcf_if *drv_lookup_by_name(struct netcf *ncf, const char *name) {
     struct netcf_if *nif = NULL;
+    size_t tries = 0;
+    MIB_IFROW *interfaceRow = NULL;
+    MIB_IFTABLE *intf = NULL;
+    char wName[BUFSIZE];
+    DWORD tableSize = 0;
     DWORD r;
-    size_t tries = MAX_TRIES;
-    ULONG bufferLength = 0;
-    PIP_ADAPTER_ADDRESSES adapter = NULL, cAddress = NULL;
-    char *nameDup = NULL;
 
-    bufferLength = sizeof(IP_ADAPTER_ADDRESSES);
-
+    tableSize = sizeof(MIB_IFTABLE);
     do {
-	adapter = malloc(bufferLength);
-	if (adapter == NULL)
-	    goto error;
+	intf = malloc(tableSize);
+	ERR_NOMEM(intf == NULL, ncf);
 
-	r = GetAdaptersAddresses(AF_UNSPEC,
-				 GAA_FLAGS,
-				 NULL,
-				 adapter,
-				 &bufferLength);
-
-	if (r == ERROR_BUFFER_OVERFLOW) {
-	    free(adapter);
-	    adapter = NULL;
+	r = GetIfTable(intf, &tableSize, 0);
+	if (r == ERROR_INSUFFICIENT_BUFFER) {
+	    free(intf);
+	    intf = NULL;
 	} else {
 	    break;
 	}
 	tries++;
-    } while ((r == ERROR_BUFFER_OVERFLOW) && (tries < MAX_TRIES));
+    } while ((r == ERROR_INSUFFICIENT_BUFFER) && (tries < MAX_TRIES));
 
-    cAddress = adapter;
-    while(cAddress) {
-	if (name) {
-	    char wName[BUFSIZE];
-	    WideCharToMultiByte(CP_UTF8, 0, cAddress->FriendlyName,
-				-1, wName, sizeof(wName), NULL, NULL);
-	    if (strcmp(wName, name) == 0) {
-		nameDup = strdup(name);
-		ERR_NOMEM(nameDup == NULL, ncf);
-
-		nif = make_netcf_if(ncf, nameDup);
-		ERR_BAIL(ncf);
-	    }
+    for (int i=0; i < intf->dwNumEntries; i++) {
+	interfaceRow = (MIB_IFROW *) & intf->table[i];
+	WideCharToMultiByte(CP_UTF8, 0, interfaceRow->wszName,
+			    -1, wName, sizeof(wName), NULL, NULL);
+	if(strcmp(wName, name) == 0) {
+	    char *nameDup = strdup(wName);
+	    ERR_NOMEM(nameDup == NULL, ncf);
+	    nif = make_netcf_if(ncf, nameDup);
+	    ERR_BAIL(ncf);
 	}
-	cAddress = cAddress->Next;
     }
-
     return nif;
  error:
-    free(nameDup);
-    free(adapter);
+    unref(nif, netcf_if);
+    free(intf);
     return nif;
 }
 
-
 const char *drv_mac_string(struct netcf_if *nif) {
+    struct netcf *ncf = nif->ncf;
     PIP_ADAPTER_ADDRESSES adapter = NULL, cAddress = NULL;
     ULONG bufferLength = 0;
     DWORD r;
-    size_t tries = MAX_TRIES;
+    size_t tries = 0;
     char *mac;
 
     bufferLength = sizeof(IP_ADAPTER_ADDRESSES);
 
     do {
 	adapter = malloc(bufferLength);
-	if (adapter == NULL)
-	    goto error;
+	ERR_NOMEM(adapter == NULL, ncf);
 
 	r = GetAdaptersAddresses(AF_UNSPEC,
 				 GAA_FLAGS,
@@ -252,18 +221,17 @@ const char *drv_mac_string(struct netcf_if *nif) {
 	WideCharToMultiByte(CP_UTF8, 0, cAddress->FriendlyName,
 			    -1, wName, sizeof(wName), NULL, NULL);
        	if (strcmp(wName,nif->name) == 0) {
-	    if (cAddress->PhysicalAddressLength >= 6)
-		continue; /* just want ethernet for now */
-	    if ((asprintf(&mac, "%02X:%02X:%02X:%02X:%02X:%02X",
-			  cAddress->PhysicalAddress[0],
-			  cAddress->PhysicalAddress[1],
-			  cAddress->PhysicalAddress[2],
-			  cAddress->PhysicalAddress[3],
-			  cAddress->PhysicalAddress[4],
-			  cAddress->PhysicalAddress[5])) < 0)
-		return NULL;
-	    if ((nif->mac = strdup(mac)) != NULL)
+	    if(asprintf(&mac, "%02X:%02X:%02X:%02X:%02X:%02X",
+			cAddress->PhysicalAddress[0],
+			cAddress->PhysicalAddress[1],
+			cAddress->PhysicalAddress[2],
+			cAddress->PhysicalAddress[3],
+			cAddress->PhysicalAddress[4],
+			cAddress->PhysicalAddress[5]) > 0) {
+		nif->mac = strdup(mac);
+		ERR_NOMEM(nif->mac == NULL, ncf);
 		return nif->mac;
+	    }
 	}
 	cAddress = cAddress->Next;
     }
@@ -274,54 +242,88 @@ const char *drv_mac_string(struct netcf_if *nif) {
 }
 
 int drv_if_down(struct netcf_if *nif) {
-    PMIB_IFTABLE intfTable = NULL;
-    PMIB_IFROW intRow;
-    int i;
+    MIB_IFTABLE *intf = NULL;
+    MIB_IFROW *interfaceRow;
+    size_t tries = 0;
+    DWORD tableSize = 0;
+    DWORD r;
+    char wName[BUFSIZE];
+
+    tableSize = sizeof(MIB_IFTABLE);
+    do {
+	intf = malloc(tableSize);
+	ERR_NOMEM(intf == NULL, ncf);
+
+	r = GetIfTable(intf, &tableSize, 0);
+	if (r == ERROR_INSUFFICIENT_BUFFER) {
+	    free(intf);
+	    intf = NULL;
+	} else {
+	    break;
+	}
+	tries++;
+    } while ((r == ERROR_INSUFFICIENT_BUFFER) && (tries < MAX_TRIES));
 
     if (intfTable != NULL) {
-	for (i = 0; i < intfTable->dwNumEntries; i++) {
-	    intRow = (PMIB_IFROW) & intfTable->table[i];
-	    char wName[BUFSIZE];
-	    WideCharToMultiByte(CP_UTF8, 0, intRow->wszName,
+	for (int i = 0; i < intf->dwNumEntries; i++) {
+	    interfaceRow = (MIB_IFROW *) & intf->table[i];
+	    WideCharToMultiByte(CP_UTF8, 0, interfaceRow->wszName,
 				-1, wName, sizeof(wName), NULL, NULL);
 	    if (strcmp(wName,nif->name) == 0) {
-		intRow->dwAdminStatus = MIB_IF_ADMIN_STATUS_DOWN;
-		if (SetIfEntry(intRow) == NO_ERROR)
+		interfaceRow->dwAdminStatus = MIB_IF_ADMIN_STATUS_DOWN;
+		if (SetIfEntry(interfaceRow) == NO_ERROR)
 		    goto done;
 	    }
 	}
 	/* Unable to shutdown interface */
-	free(intfTable);
+	free(intf);
 	return -1;
     }
  done:
-    free(intfTable);
+    free(intf);
     return 0;
 }
 
 int drv_if_up(struct netcf_if *nif) {
-    PMIB_IFTABLE intfTable = NULL;
-    PMIB_IFROW intRow;
-    int i;
+    MIB_IFTABLE *intf = NULL;
+    MIB_IFROW *interfaceRow;
+    size_t tries = 0;
+    DWORD tableSize = 0;
+    DWORD r;
+    char wName[BUFSIZE];
+
+    tableSize = sizeof(MIB_IFTABLE);
+    do {
+	intf = malloc(tableSize);
+	ERR_NOMEM(intf == NULL, ncf);
+
+	r = GetIfTable(intf, &tableSize, 0);
+	if (r == ERROR_INSUFFICIENT_BUFFER) {
+	    free(intf);
+	    intf = NULL;
+	} else {
+	    break;
+	}
+	tries++;
+    } while ((r == ERROR_INSUFFICIENT_BUFFER) && (tries < MAX_TRIES));
 
     if (intfTable != NULL) {
-	for (i = 0; i < (int) intfTable->dwNumEntries; i++) {
-	    intRow = (PMIB_IFROW) & intfTable->table[i];
-	    char wName[BUFSIZE];
-	    WideCharToMultiByte(CP_UTF8, 0, intRow->wszName,
+	for (int i = 0; i < intf->dwNumEntries; i++) {
+	    interfaceRow = (MIB_IFROW *) & intf->table[i];
+	    WideCharToMultiByte(CP_UTF8, 0, interfaceRow->wszName,
 				-1, wName, sizeof(wName), NULL, NULL);
 	    if (strcmp(wName,nif->name) == 0) {
-		intRow->dwAdminStatus = MIB_IF_ADMIN_STATUS_UP;
-		if (SetIfEntry(intRow) == NO_ERROR)
+		interfaceRow->dwAdminStatus = MIB_IF_ADMIN_STATUS_UP;
+		if (SetIfEntry(interfaceRow) == NO_ERROR)
 		    goto done;
 	    }
 	}
 	/* Unable to shutdown interface */
-	free(intfTable);
+	free(intf);
 	return -1;
     }
  done:
-    free(intfTable);
+    free(intf);
     return 0;
 }
 
