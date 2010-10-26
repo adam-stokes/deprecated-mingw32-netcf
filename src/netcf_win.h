@@ -47,19 +47,14 @@ int xasprintf(char **strp, const char *format, ...);
 /* Create a new netcf if instance for interface NAME */
 struct netcf_if *make_netcf_if(struct netcf *ncf, char *name);
 
-/* Reports ip addresses */
+/* Lists all available IP addresses */
 int drv_if_ipaddresses(struct netcf_if *nif, char *ipBuf);
 
-/* add ip address to device */
 int drv_add_ip_address(struct netcf_if *nif, char *ipAddr,
 		       char *netmask);
-/* remove ip address from device */
+
 int drv_rm_ip_address(struct netcf_if *nif, uint64_t NTEContext);
-/* add dns server to device */
-int drv_add_dns_server(struct netcf_if *nif, uint64_t NTEContext);
-/* rm dns server from device */
-int drv_rm_dns_server(struct netcf_if *nif);
-/* list dns server */
+
 int drv_list_dns_server(struct netcf_if *ncf, char *ip_str);
 
 #endif /* NETCF_WIN_H */
