@@ -200,10 +200,11 @@ int drv_if_down(struct netcf_if *nif) {
     r = GetAdaptersInfo(adapter_info, &tableSize);
     ERR_COND_BAIL(r != NO_ERROR, ncf, EOTHER);
 
+    row = malloc(sizeof(MIB_IFROW));
     adapter = adapter_info;
     while(adapter) {
 	if(strcmp(nif->name, adapter->AdapterName) == 0) {
-	    row = (MIB_IFROW *) & adapter->Index;
+	    row->dwIndex = adapter->Index;
 	    row->dwAdminStatus = MIB_IF_ADMIN_STATUS_DOWN;
 	    r = SetIfEntry(row);
 	    ERR_COND_BAIL(r != NO_ERROR, ncf, EOTHER);
