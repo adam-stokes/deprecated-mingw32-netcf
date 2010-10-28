@@ -32,7 +32,7 @@
 #define BUFSIZE 1024
 
 char *strerror_r(int errnum, char *buf, size_t buflen) {
-    return NULL;
+    return strerror(errnum);
 }
 
 /* Like asprintf, but set *STRP to NULL on error */

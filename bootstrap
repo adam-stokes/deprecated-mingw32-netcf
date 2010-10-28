@@ -71,6 +71,7 @@ getopt-posix
 inet_ntop
 inet_pton
 netinet_in
+posix_spawnp
 pthread
 read-file
 safe-alloc

@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <spawn.h>
 #include <errno.h>
 
 #include "safe-alloc.h"
@@ -344,19 +345,23 @@ int ncf_put_aug(struct netcf *ncf, const char *aug_xml, char **ncf_xml) {
 #endif
 
 #ifdef WIN32
+/*
+ * Internal helpers
+ */
+
 static int
 exec_program(struct netcf *ncf,
              const char *const*argv,
              const char *commandline,
              pid_t *pid)
 {
-    return -1;
+    if(!posix_spawnp(&pid, argv[0], NULL, NULL,
+                     argv, environ))
+        return -1;
+    else
+        return 0;
 }
 #else
-/*
- * Internal helpers
- */
-
 static int
 exec_program(struct netcf *ncf,
              const char *const*argv,
@@ -390,7 +395,7 @@ exec_program(struct netcf *ncf,
     if (*pid) { /* parent */
         /* Restore our original signal mask now that the child is
            safely running */
-    ERR_THROW(pthread_sigmask(SIG_SETMASK, &oldmask, NULL) != 0,
+        ERR_THROW(pthread_sigmask(SIG_SETMASK, &oldmask, NULL) != 0,
                   ncf, EEXEC,
                   "failed to restore signal mask while forking for '%s': %s",
                   commandline, strerror_r(errno, errbuf, sizeof(errbuf)));
