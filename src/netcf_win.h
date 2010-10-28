@@ -36,9 +36,12 @@
 #include <ws2tcpip.h>
 #include <windns.h>
 #include <iphlpapi.h>
+#include <spawn.h>
 #include "safe-alloc.h"
 #include "ref.h"
 #include "list.h"
+
+char *strerror_r(int errnum, char *buf, size_t buflen);
 
 /* Like asprintf, but set *STRP to NULL on error */
 ATTRIBUTE_FORMAT(printf, 2, 3)
@@ -46,15 +49,5 @@ int xasprintf(char **strp, const char *format, ...);
 
 /* Create a new netcf if instance for interface NAME */
 struct netcf_if *make_netcf_if(struct netcf *ncf, char *name);
-
-/* Lists all available IP addresses */
-int drv_if_ipaddresses(struct netcf_if *nif, char *ipBuf);
-
-int drv_add_ip_address(struct netcf_if *nif, char *ipAddr,
-		       char *netmask);
-
-int drv_rm_ip_address(struct netcf_if *nif, uint64_t NTEContext);
-
-int drv_list_dns_server(struct netcf_if *ncf, char *ip_str);
 
 #endif /* NETCF_WIN_H */

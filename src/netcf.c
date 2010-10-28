@@ -343,10 +343,16 @@ int ncf_put_aug(struct netcf *ncf, const char *aug_xml, char **ncf_xml) {
 }
 #endif
 
-#ifndef WIN32
-/* Do not see any other way around this as there is no
- * portable option for strerror_r or pthread_sigmask
- */
+#ifdef WIN32
+static int
+exec_program(struct netcf *ncf,
+             const char *const*argv,
+             const char *commandline,
+             pid_t *pid)
+{
+    return -1;
+}
+#else
 /*
  * Internal helpers
  */
@@ -384,7 +390,7 @@ exec_program(struct netcf *ncf,
     if (*pid) { /* parent */
         /* Restore our original signal mask now that the child is
            safely running */
-        ERR_THROW(pthread_sigmask(SIG_SETMASK, &oldmask, NULL) != 0,
+    ERR_THROW(pthread_sigmask(SIG_SETMASK, &oldmask, NULL) != 0,
                   ncf, EEXEC,
                   "failed to restore signal mask while forking for '%s': %s",
                   commandline, strerror_r(errno, errbuf, sizeof(errbuf)));
@@ -395,7 +401,6 @@ exec_program(struct netcf *ncf,
 
     /* Clear out all signal handlers from parent so nothing unexpected
        can happen in our child once we unblock signals */
-
     sig_action.sa_handler = SIG_DFL;
     sig_action.sa_flags = 0;
     sigemptyset(&sig_action.sa_mask);
@@ -434,6 +439,7 @@ error:
        should never jump here on error */
     return -1;
 }
+#endif
 
 /**
  * Run a command without using the shell.
@@ -480,7 +486,6 @@ error:
     return ret;
 }
 
-#endif /* WIN32 */
 /*
  * argv_to_string() is borrowed from libvirt's
  * src/util.c:virArgvToString()

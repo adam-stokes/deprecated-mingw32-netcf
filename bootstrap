@@ -76,7 +76,9 @@ read-file
 safe-alloc
 setenv
 signal
+sigprocmask
 socket
+spawn
 stddef
 string
 sys_ioctl
@@ -84,6 +86,7 @@ sys_socket
 sys_wait
 unistd
 vasprintf
+waitpid
 warnings
 '
 
