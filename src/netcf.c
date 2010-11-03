@@ -308,6 +308,7 @@ int ncf_error(struct netcf *ncf, const char **errmsg, const char **details) {
 
     if (ncf->errcode >= ARRAY_CARDINALITY(errmsgs))
         errcode = NETCF_EINTERNAL;
+
     if (errmsg)
         *errmsg = errmsgs[errcode];
     if (details)
@@ -355,11 +356,21 @@ exec_program(struct netcf *ncf,
              const char *commandline,
              pid_t *pid)
 {
-    if(!posix_spawnp(&pid, argv[0], NULL, NULL,
-                     argv, environ))
-        return -1;
-    else
-        return 0;
+    posix_spawnattr_t attr;
+    int rc, status;
+
+    rc = posix_spawnattr_init(&attr);
+    ERR_COND_BAIL(rc != 0, ncf, EOTHER);
+    rc = posix_spawnp(&pid, argv[0], NULL, &attr,
+                      (char * const *)argv, environ);
+    ERR_COND_BAIL(rc > 0, ncf, EOTHER);
+    rc = posix_spawnattr_destroy(&attr);
+    ERR_COND_BAIL(rc != 0, ncf, EOTHER);
+
+    (void) waitpid(pid, &status, 0);
+    return WEXITSTATUS(status);
+error:
+    return -1;
 }
 #else
 static int
