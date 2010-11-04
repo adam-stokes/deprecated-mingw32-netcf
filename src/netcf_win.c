@@ -195,17 +195,21 @@ int drv_if_down(struct netcf_if *nif) {
     struct netcf *ncf = nif->ncf;
     char *exe_path;
     char *p;
-    int r;
+    const int max_args = 8;
+    char *args[max_args];
+    int r = 0, a = 0;
 
     p = getenv("WINDIR");
     r = asprintf(&exe_path, "%s\\system32\\netsh.exe", p);
     ERR_NOMEM(r < 0, ncf);
 
-    const char *const argv[] = {
-        exe_path, "interface", "set", "interface",
-        nif->name, "DISABLE" };
+    args[a++] = exe_path;
+    args[a++] = strdup("interface");
+    args[a++] = strdup("set");
+    args[a++] = nif->name;
+    args[a++] = strdup("DISABLE");
 
-    run_program(ncf, argv);
+    run_program(ncf, args);
     ERR_BAIL(ncf);
     return 0;
  error:
@@ -216,17 +220,21 @@ int drv_if_up(struct netcf_if *nif) {
     struct netcf *ncf = nif->ncf;
     char *exe_path;
     char *p;
-    int r = 0;
+    const int max_args = 8;
+    char *args[max_args];
+    int r = 0, a = 0;
 
     p = getenv("WINDIR");
     r = asprintf(&exe_path, "%s\\system32\\netsh.exe", p);
     ERR_NOMEM(r < 0, ncf);
 
-    const char *const argv[] = {
-        exe_path, "interface", "set", "interface",
-        nif->name, "ENABLE" };
+    args[a++] = exe_path;
+    args[a++] = strdup("interface");
+    args[a++] = strdup("set");
+    args[a++] = nif->name;
+    args[a++] = strdup("ENABLE");
 
-    run_program(ncf, argv);
+    run_program(ncf, args);
     ERR_BAIL(ncf);
     return 0;
  error:

@@ -308,6 +308,7 @@ int ncf_error(struct netcf *ncf, const char **errmsg, const char **details) {
 
     if (ncf->errcode >= ARRAY_CARDINALITY(errmsgs))
         errcode = NETCF_EINTERNAL;
+
     if (errmsg)
         *errmsg = errmsgs[errcode];
     if (details)
@@ -344,24 +345,10 @@ int ncf_put_aug(struct netcf *ncf, const char *aug_xml, char **ncf_xml) {
 }
 #endif
 
-#ifdef WIN32
+#ifndef WIN32
 /*
  * Internal helpers
  */
-
-static int
-exec_program(struct netcf *ncf,
-             const char *const*argv,
-             const char *commandline,
-             pid_t *pid)
-{
-    if(!posix_spawnp(&pid, argv[0], NULL, NULL,
-                     argv, environ))
-        return -1;
-    else
-        return 0;
-}
-#else
 static int
 exec_program(struct netcf *ncf,
              const char *const*argv,
@@ -464,8 +451,13 @@ int run_program(struct netcf *ncf, const char *const *argv) {
     argv_str = argv_to_string(argv);
     ERR_NOMEM(argv_str == NULL, ncf);
 
+#ifdef WIN32
+    ret = posix_spawnp(&childpid, argv[0], NULL, NULL, (char * const*)argv, environ);
+    ERR_COND_BAIL(ret != 0, ncf, EOTHER);
+#else
     exec_program(ncf, argv, argv_str, &childpid);
     ERR_BAIL(ncf);
+#endif
 
     while ((waitret = waitpid(childpid, &exitstatus, 0) == -1) &&
            errno == EINTR) {
