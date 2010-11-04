@@ -345,34 +345,10 @@ int ncf_put_aug(struct netcf *ncf, const char *aug_xml, char **ncf_xml) {
 }
 #endif
 
-#ifdef WIN32
+#ifndef WIN32
 /*
  * Internal helpers
  */
-
-static int
-exec_program(struct netcf *ncf,
-             const char *const*argv,
-             const char *commandline,
-             pid_t *pid)
-{
-    posix_spawnattr_t attr;
-    int rc, status;
-
-    rc = posix_spawnattr_init(&attr);
-    ERR_COND_BAIL(rc != 0, ncf, EOTHER);
-    rc = posix_spawnp(&pid, argv[0], NULL, &attr,
-                      (char * const *)argv, environ);
-    ERR_COND_BAIL(rc > 0, ncf, EOTHER);
-    rc = posix_spawnattr_destroy(&attr);
-    ERR_COND_BAIL(rc != 0, ncf, EOTHER);
-
-    (void) waitpid(pid, &status, 0);
-    return WEXITSTATUS(status);
-error:
-    return -1;
-}
-#else
 static int
 exec_program(struct netcf *ncf,
              const char *const*argv,
@@ -475,8 +451,13 @@ int run_program(struct netcf *ncf, const char *const *argv) {
     argv_str = argv_to_string(argv);
     ERR_NOMEM(argv_str == NULL, ncf);
 
+#ifdef WIN32
+    ret = posix_spawnp(&childpid, argv[0], NULL, NULL, (char * const*)argv, environ);
+    ERR_COND_BAIL(ret != 0, ncf, EOTHER);
+#else
     exec_program(ncf, argv, argv_str, &childpid);
     ERR_BAIL(ncf);
+#endif
 
     while ((waitret = waitpid(childpid, &exitstatus, 0) == -1) &&
            errno == EINTR) {
