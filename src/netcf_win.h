@@ -36,6 +36,7 @@
 #include <ws2tcpip.h>
 #include <windns.h>
 #include <iphlpapi.h>
+#include <process.h>
 #include "safe-alloc.h"
 #include "ref.h"
 #include "list.h"
@@ -49,4 +50,5 @@ int xasprintf(char **strp, const char *format, ...);
 /* Create a new netcf if instance for interface NAME */
 struct netcf_if *make_netcf_if(struct netcf *ncf, char *name);
 
+PIP_ADAPTER_ADDRESSES build_adapter_table(struct netcf *ncf);
 #endif /* NETCF_WIN_H */

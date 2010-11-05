@@ -25,6 +25,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <spawn.h>
 #include "netcf_win.h"
 
 #define MAX_TRIES 5
@@ -64,39 +65,53 @@ struct netcf_if *make_netcf_if(struct netcf *ncf, char *name) {
     return result;
 }
 
+PIP_ADAPTER_ADDRESSES build_adapter_table(struct netcf *ncf) {
+    int r = 0;
+    DWORD tableSize = 0;
+    PIP_ADAPTER_ADDRESSES pAddresses = NULL;
+
+    GetAdaptersAddresses(AF_UNSPEC, GAA_FLAGS, NULL, pAddresses, &tableSize);
+    pAddresses = malloc(tableSize);
+    ERR_NOMEM(pAddresses == NULL, ncf);
+    r = GetAdaptersAddresses(AF_INET, GAA_FLAGS, NULL, pAddresses, &tableSize);
+    ERR_COND_BAIL(r != NO_ERROR, ncf, EOTHER);
+
+    return pAddresses;
+error:
+    free(pAddresses);
+    return NULL;
+}
+
 static int list_interface_ids(struct netcf *ncf,
                               int maxnames,
                               char **names, unsigned int flags,
                               const char *id_attr) {
     size_t nint = 0;
-    DWORD r = 0, tableSize = 0;
-    IP_ADAPTER_INFO *adapter_info;
-    IP_ADAPTER_INFO *adapter = NULL;
+    int r = 0;
+    DWORD tableSize = 0;
+    IP_ADAPTER_ADDRESSES *adapter;
 
-    GetAdaptersInfo(NULL, &tableSize);
-    adapter_info = malloc(tableSize);
-    ERR_NOMEM(adapter_info == NULL, ncf);
-    r = GetAdaptersInfo(adapter_info, &tableSize);
-    ERR_COND_BAIL(r != NO_ERROR, ncf, EOTHER);
-    adapter = adapter_info;
+    adapter = build_adapter_table(ncf);
+    ERR_COND_BAIL(adapter == NULL, ncf, EOTHER);
+
     while(adapter) {
         if(names) {
-            names[nint] = strdup(adapter->AdapterName);
+            char wName[8192];
+            r = WideCharToMultiByte(CP_UTF8, 0, adapter->FriendlyName,
+                                    -1, wName, sizeof(wName), NULL, NULL);
+            ERR_NOMEM(r == 0, ncf);
+            names[nint] = strdup(wName);
             ERR_NOMEM(names[nint] == NULL, ncf);
         }
         nint++;
         adapter = adapter->Next;
     }
-    if (adapter_info)
-        free(adapter_info);
     return nint;
  error:
     while(nint > 0) {
         free(names[nint]);
         nint--;
     }
-    if(adapter_info)
-        free(adapter_info);
     return -1;
 }
 
@@ -114,70 +129,73 @@ int drv_num_of_interfaces(struct netcf *ncf, unsigned int flags) {
 
 struct netcf_if *drv_lookup_by_name(struct netcf *ncf, const char *name) {
     struct netcf_if *nif = NULL;
-    DWORD r = 0, tableSize = 0;
-    char *buf, *nameDup;
-    IP_ADAPTER_INFO *adapter_info;
-    IP_ADAPTER_INFO *adapter = NULL;
+    char *nameDup;
+    int r = 0;
+    IP_ADAPTER_ADDRESSES *adapter;
 
-    GetAdaptersInfo(NULL, &tableSize);
-    adapter_info = malloc(tableSize);
-    ERR_NOMEM(adapter_info == NULL, ncf);
-    r = GetAdaptersInfo(adapter_info, &tableSize);
-    ERR_COND_BAIL(r != NO_ERROR, ncf, EOTHER);
-    
-    adapter = adapter_info;
+    adapter = build_adapter_table(ncf);
+    ERR_COND_BAIL(adapter == NULL, ncf, EOTHER);
+   
     while(adapter) {
         if(name) {
-            if(strcmp(name,adapter->AdapterName) == 0) {
-                nameDup = strdup(adapter->AdapterName);
+            char wName[8192];
+            r = WideCharToMultiByte(CP_UTF8, 0, adapter->FriendlyName,
+                                    -1, wName, sizeof(wName), NULL, NULL);
+            ERR_NOMEM(r == 0, ncf);
+            if(strcmp(name,wName) == 0) {
+                nameDup = strdup(wName);
                 ERR_NOMEM(nameDup == NULL, ncf);
                 nif = make_netcf_if(ncf, nameDup);
                 ERR_BAIL(ncf);
+                return nif;
             }
         }
         adapter = adapter->Next;
     }
+    /* If we get here then the device wasn't found, however,
+       for cases where we know the device is disabled and
+       want to re-enable it we have to assume the device is
+       physically present
+    */
+    nameDup = strdup(name);
+    nif = make_netcf_if(ncf, nameDup);
     return nif;
  error:
     unref(nif, netcf_if);
-    if (adapter_info)
-        free(adapter_info);
     return nif;
 }
 
 const char *drv_mac_string(struct netcf_if *nif) {
     struct netcf *ncf = nif->ncf;
-    DWORD r = 0, tableSize = 0;
-    size_t nint = 0, i = 0;
+    size_t i = 0;
+    int r = 0;
     char mac[BUFSIZE], *buf;
-    IP_ADAPTER_INFO *adapter_info;
-    IP_ADAPTER_INFO *adapter = NULL;
 
-    GetAdaptersInfo(NULL, &tableSize);
-    adapter_info = malloc(tableSize);
-    ERR_NOMEM(adapter_info == NULL, ncf);
-    r = GetAdaptersInfo(adapter_info, &tableSize);
-    ERR_COND_BAIL(r != NO_ERROR, ncf, EOTHER);
+    IP_ADAPTER_ADDRESSES *adapter;
 
-    adapter = adapter_info;
+    adapter = build_adapter_table(ncf);
+    ERR_COND_BAIL(adapter == NULL, ncf, EOTHER);
+
     while(adapter) {
-        if(strcmp(nif->name, adapter->AdapterName) == 0) {
-            for(i = 0; i < adapter->AddressLength; i++) {
+        char wName[8192];
+        r = WideCharToMultiByte(CP_UTF8, 0, adapter->FriendlyName,
+                                -1, wName, sizeof(wName), NULL, NULL);
+        ERR_NOMEM(r == 0, ncf);
+        if(strcmp(nif->name, wName) == 0) {
+            for(i = 0; i < adapter->PhysicalAddressLength; i++) {
                 if (i == 0) {
-                    ERR_NOMEM(asprintf(&buf, "%.2X:", adapter->Address[i]) < 0, ncf);
+                    ERR_NOMEM(asprintf(&buf, "%.2X:", adapter->PhysicalAddress[i]) < 0, ncf);
                     strcpy(mac, buf);
                 }
-                if (i == (adapter->AddressLength - 1)) {
-                    ERR_NOMEM(asprintf(&buf, "%.2X", adapter->Address[i]) < 0, ncf);
+                if (i == (adapter->PhysicalAddressLength - 1)) {
+                    ERR_NOMEM(asprintf(&buf, "%.2X", adapter->PhysicalAddress[i]) < 0, ncf);
                     strcat(mac, buf);
                 } else {
-                    ERR_NOMEM(asprintf(&buf, "%.2X:", adapter->Address[i]) < 0, ncf);
+                    ERR_NOMEM(asprintf(&buf, "%.2X:", adapter->PhysicalAddress[i]) < 0, ncf);
                     strcat(mac, buf);
                 }
                 nif->mac = strdup(mac);
                 ERR_NOMEM(nif->mac == NULL, ncf);
-                if(adapter_info)
-                    free(adapter_info);
             }
             return nif->mac;
         }
@@ -186,8 +204,6 @@ const char *drv_mac_string(struct netcf_if *nif) {
  error:
     if(buf)
         free(buf);
-    if(adapter_info)
-        free(adapter_info);
     return nif->mac;
 }
 
@@ -195,22 +211,15 @@ int drv_if_down(struct netcf_if *nif) {
     struct netcf *ncf = nif->ncf;
     char *exe_path;
     char *p;
-    const int max_args = 8;
-    char *args[max_args];
-    int r = 0, a = 0;
+    int r = 0;
 
     p = getenv("WINDIR");
-    r = asprintf(&exe_path, "%s\\system32\\netsh.exe", p);
+    r = asprintf(&exe_path, "%s\\system32\\netsh", p);
     ERR_NOMEM(r < 0, ncf);
 
-    args[a++] = exe_path;
-    args[a++] = strdup("interface");
-    args[a++] = strdup("set");
-    args[a++] = nif->name;
-    args[a++] = strdup("DISABLE");
-
-    run_program(ncf, args);
-    ERR_BAIL(ncf);
+    r = _spawnl(_P_WAIT, exe_path, exe_path, "interface",
+                "set", "interface", nif->name, "disabled", NULL);
+    ERR_COND_BAIL(r != 0, ncf, EOTHER);
     return 0;
  error:
     return -1;
@@ -220,22 +229,15 @@ int drv_if_up(struct netcf_if *nif) {
     struct netcf *ncf = nif->ncf;
     char *exe_path;
     char *p;
-    const int max_args = 8;
-    char *args[max_args];
-    int r = 0, a = 0;
+    int r = 0;
 
     p = getenv("WINDIR");
-    r = asprintf(&exe_path, "%s\\system32\\netsh.exe", p);
+    r = asprintf(&exe_path, "%s\\system32\\netsh", p);
     ERR_NOMEM(r < 0, ncf);
 
-    args[a++] = exe_path;
-    args[a++] = strdup("interface");
-    args[a++] = strdup("set");
-    args[a++] = nif->name;
-    args[a++] = strdup("ENABLE");
-
-    run_program(ncf, args);
-    ERR_BAIL(ncf);
+    r = _spawnl(_P_WAIT, exe_path, exe_path, "interface",
+                "set", "interface", nif->name, "enabled", NULL);
+    ERR_COND_BAIL(r != 0, ncf, EOTHER);
     return 0;
  error:
     return -1;
