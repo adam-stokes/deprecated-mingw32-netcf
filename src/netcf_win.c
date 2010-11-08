@@ -31,9 +31,7 @@
 #define GAA_FLAGS ( GAA_FLAG_SKIP_DNS_SERVER | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_ANYCAST )
 #define BUFSIZE 1024
 
-char *strerror_r(int errnum, char *buf, size_t buflen) {
-    return strerror(errnum);
-}
+#define strerror_s(buf,buflen,e) strerror_r((e),(buf),(buflen))
 
 /* Like asprintf, but set *STRP to NULL on error */
 int xasprintf(char **strp, const char *format, ...) {
@@ -87,7 +85,6 @@ static int list_interface_ids(struct netcf *ncf,
                               const char *id_attr) {
     size_t nint = 0;
     int r = 0;
-    DWORD tableSize = 0;
     IP_ADAPTER_ADDRESSES *adapter;
 
     adapter = build_adapter_table(ncf);
@@ -129,7 +126,7 @@ int drv_num_of_interfaces(struct netcf *ncf, unsigned int flags) {
 
 struct netcf_if *drv_lookup_by_name(struct netcf *ncf, const char *name) {
     struct netcf_if *nif = NULL;
-    char *nameDup;
+    char *nameDup = NULL;
     int r = 0;
     IP_ADAPTER_ADDRESSES *adapter;
 
@@ -164,8 +161,7 @@ struct netcf_if *drv_lookup_by_name(struct netcf *ncf, const char *name) {
     return nif;
  error:
     free(adapter);
-    if(nameDup)
-        free(nameDup);
+    free(nameDup);
     unref(nif, netcf_if);
     return nif;
 }
@@ -209,7 +205,6 @@ const char *drv_mac_string(struct netcf_if *nif) {
  error:
     free(adapter);
     free(buf);
-    free(mac);
     return nif->mac;
 }
 
