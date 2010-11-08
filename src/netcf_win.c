@@ -28,7 +28,6 @@
 #include <spawn.h>
 #include "netcf_win.h"
 
-#define MAX_TRIES 5
 #define GAA_FLAGS ( GAA_FLAG_SKIP_DNS_SERVER | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_ANYCAST )
 #define BUFSIZE 1024
 
@@ -62,6 +61,7 @@ struct netcf_if *make_netcf_if(struct netcf *ncf, char *name) {
 
  error:
     unref(result, netcf_if);
+    free(result);
     return result;
 }
 
@@ -75,7 +75,6 @@ PIP_ADAPTER_ADDRESSES build_adapter_table(struct netcf *ncf) {
     ERR_NOMEM(pAddresses == NULL, ncf);
     r = GetAdaptersAddresses(AF_INET, GAA_FLAGS, NULL, pAddresses, &tableSize);
     ERR_COND_BAIL(r != NO_ERROR, ncf, EOTHER);
-
     return pAddresses;
 error:
     free(pAddresses);
@@ -108,6 +107,7 @@ static int list_interface_ids(struct netcf *ncf,
     }
     return nint;
  error:
+    free(adapter);
     while(nint > 0) {
         free(names[nint]);
         nint--;
@@ -118,7 +118,7 @@ static int list_interface_ids(struct netcf *ncf,
 int drv_list_interfaces(struct netcf *ncf,
                         int maxnames, char **names,
                         unsigned int flags) {
-    return list_interface_ids(ncf, 0, names, 0, NULL);
+    return list_interface_ids(ncf, maxnames, names, 0, NULL);
 }
 
 
@@ -158,9 +158,14 @@ struct netcf_if *drv_lookup_by_name(struct netcf *ncf, const char *name) {
        physically present
     */
     nameDup = strdup(name);
+    ERR_NOMEM(nameDup == NULL, ncf);
     nif = make_netcf_if(ncf, nameDup);
+    ERR_BAIL(ncf);
     return nif;
  error:
+    free(adapter);
+    if(nameDup)
+        free(nameDup);
     unref(nif, netcf_if);
     return nif;
 }
@@ -202,8 +207,9 @@ const char *drv_mac_string(struct netcf_if *nif) {
         adapter = adapter->Next;
     }
  error:
-    if(buf)
-        free(buf);
+    free(adapter);
+    free(buf);
+    free(mac);
     return nif->mac;
 }
 
@@ -219,9 +225,10 @@ int drv_if_down(struct netcf_if *nif) {
 
     r = _spawnl(_P_WAIT, exe_path, exe_path, "interface",
                 "set", "interface", nif->name, "disabled", NULL);
-    ERR_COND_BAIL(r != 0, ncf, EOTHER);
+    ERR_COND_BAIL(r != 0, ncf, EEXEC);
     return 0;
  error:
+    free(exe_path);
     return -1;
 }
 
@@ -237,9 +244,10 @@ int drv_if_up(struct netcf_if *nif) {
 
     r = _spawnl(_P_WAIT, exe_path, exe_path, "interface",
                 "set", "interface", nif->name, "enabled", NULL);
-    ERR_COND_BAIL(r != 0, ncf, EOTHER);
+    ERR_COND_BAIL(r != 0, ncf, EEXEC);
     return 0;
  error:
+    free(exe_path);
     return -1;
 }
 
