@@ -46,6 +46,39 @@
 #include "dutil_mswindows.h"
 
 #define GAA_FLAGS ( GAA_FLAG_SKIP_DNS_SERVER | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_ANYCAST )
+#define BUFSIZE 1024
+
+#define strerror_s(buf,buflen,e) strerror_r((e),(buf),(buflen))
+
+/* Like asprintf, but set *STRP to NULL on error */
+int xasprintf(char **strp, const char *format, ...) {
+    va_list args;
+    int result;
+
+    va_start (args, format);
+    result = vasprintf (strp, format, args);
+    va_end (args);
+    if (result < 0)
+        *strp = NULL;
+    return result;
+}
+
+/* Create a new netcf if instance for interface NAME */
+struct netcf_if *make_netcf_if(struct netcf *ncf, char *name) {
+    int r;
+    struct netcf_if *result = NULL;
+
+    r = make_ref(result);
+    ERR_NOMEM(r < 0, ncf);
+    result->ncf = ref(ncf);
+    result->name = strdup(name);
+    return result;
+
+ error:
+    unref(result, netcf_if);
+    free(result);
+    return result;
+}
 
 PIP_ADAPTER_ADDRESSES build_adapter_table(struct netcf *ncf) {
     int r = 0;
@@ -69,7 +102,6 @@ static int list_interface_ids(struct netcf *ncf,
                               const char *id_attr) {
     size_t nint = 0;
     int r = 0;
-    DWORD tableSize = 0;
     IP_ADAPTER_ADDRESSES *adapter;
     char *wName;
 
@@ -111,7 +143,7 @@ int drv_num_of_interfaces(struct netcf *ncf, unsigned int flags) {
 
 struct netcf_if *drv_lookup_by_name(struct netcf *ncf, const char *name) {
     struct netcf_if *nif = NULL;
-    char *nameDup;
+    char *nameDup = NULL;
     int r = 0;
     IP_ADAPTER_ADDRESSES *adapter;
 
@@ -146,8 +178,7 @@ struct netcf_if *drv_lookup_by_name(struct netcf *ncf, const char *name) {
     return nif;
  error:
     free(adapter);
-    if(nameDup)
-        free(nameDup);
+    free(nameDup);
     unref(nif, netcf_if);
     return nif;
 }
@@ -191,7 +222,6 @@ const char *drv_mac_string(struct netcf_if *nif) {
  error:
     free(adapter);
     free(buf);
-    free(mac);
     return nif->mac;
 }
 
