@@ -20,50 +20,32 @@
  * Author: Adam Stokes <ajs@redhat.com>
  */
 
+#ifndef WINVER
+# define WINVER 0x0501
+#endif
+
 #include <config.h>
 #include <internal.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <spawn.h>
-#include "netcf_win.h"
+#include <stdbool.h>
+#include <string.h>
+#include <windows.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <windns.h>
+#include <iphlpapi.h>
+#include <process.h>
+
+#include "safe-alloc.h"
+#include "ref.h"
+#include "list.h"
+#include "dutil.h"
+#include "dutil_mswindows.h"
 
 #define GAA_FLAGS ( GAA_FLAG_SKIP_DNS_SERVER | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_ANYCAST )
-#define BUFSIZE 1024
-
-char *strerror_r(int errnum, char *buf, size_t buflen) {
-    return strerror(errnum);
-}
-
-/* Like asprintf, but set *STRP to NULL on error */
-int xasprintf(char **strp, const char *format, ...) {
-    va_list args;
-    int result;
-
-    va_start (args, format);
-    result = vasprintf (strp, format, args);
-    va_end (args);
-    if (result < 0)
-        *strp = NULL;
-    return result;
-}
-
-/* Create a new netcf if instance for interface NAME */
-struct netcf_if *make_netcf_if(struct netcf *ncf, char *name) {
-    int r;
-    struct netcf_if *result = NULL;
-
-    r = make_ref(result);
-    ERR_NOMEM(r < 0, ncf);
-    result->ncf = ref(ncf);
-    result->name = strdup(name);
-    return result;
-
- error:
-    unref(result, netcf_if);
-    free(result);
-    return result;
-}
 
 PIP_ADAPTER_ADDRESSES build_adapter_table(struct netcf *ncf) {
     int r = 0;
@@ -71,13 +53,13 @@ PIP_ADAPTER_ADDRESSES build_adapter_table(struct netcf *ncf) {
     PIP_ADAPTER_ADDRESSES pAddresses = NULL;
 
     GetAdaptersAddresses(AF_UNSPEC, GAA_FLAGS, NULL, pAddresses, &tableSize);
-    pAddresses = malloc(tableSize);
+    pAddresses = ALLOC(tableSize);
     ERR_NOMEM(pAddresses == NULL, ncf);
     r = GetAdaptersAddresses(AF_INET, GAA_FLAGS, NULL, pAddresses, &tableSize);
     ERR_COND_BAIL(r != NO_ERROR, ncf, EOTHER);
     return pAddresses;
 error:
-    free(pAddresses);
+    FREE(pAddresses);
     return NULL;
 }
 
@@ -89,15 +71,15 @@ static int list_interface_ids(struct netcf *ncf,
     int r = 0;
     DWORD tableSize = 0;
     IP_ADAPTER_ADDRESSES *adapter;
+    char *wName;
 
     adapter = build_adapter_table(ncf);
     ERR_COND_BAIL(adapter == NULL, ncf, EOTHER);
 
     while(adapter) {
         if(names) {
-            char wName[8192];
             r = WideCharToMultiByte(CP_UTF8, 0, adapter->FriendlyName,
-                                    -1, wName, sizeof(wName), NULL, NULL);
+                                    -1, wName, sizeof(adapter->FriendlyName), NULL, NULL);
             ERR_NOMEM(r == 0, ncf);
             names[nint] = strdup(wName);
             ERR_NOMEM(names[nint] == NULL, ncf);

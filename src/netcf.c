@@ -38,14 +38,12 @@
 #include "netcf.h"
 #ifdef WIN32
 # include "netcf_win.h"
+# include "dutil_win.h"
 #else
 # include "dutil.h"
 #endif
 
 /* Clear error code and details */
-#ifdef WIN32
-#define API_ENTRY(ncf) NULL;
-#else
 #define API_ENTRY(ncf)                          \
     do {                                        \
         (ncf)->errcode = NETCF_NOERROR;         \
@@ -53,7 +51,6 @@
         if (ncf->driver != NULL)                \
             drv_entry(ncf);                     \
     } while(0);
-#endif
 
 /* Human-readable error messages. This array is indexed by NETCF_ERRCODE_T */
 static const char *const errmsgs[] = {
