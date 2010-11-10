@@ -5,7 +5,7 @@ GNULIB_CFLAGS= -I $(top_srcdir)/gnulib/lib
 AM_CFLAGS = $(NETCF_CFLAGS) $(GNULIB_CFLAGS) $(WARN_CFLAGS) \
   $(LIBXML_CFLAGS) $(LIBXSLT_CFLAGS) $(LIBAUGEAS_CFLAGS)
 
-include_HEADERS = netcf.h netcf_win.h
+include_HEADERS = netcf.h
 
 lib_LTLIBRARIES = libnetcf.la
 
@@ -17,12 +17,11 @@ EXTRA_DIST = netcf_public.syms \
 	netcf_private.syms
 
 if PLATFORM_WIN32
-WIN32LIB= -liphlpapi -ldnsapi
-DRIVER_SOURCES = netcf_win.c
-else
-DRIVER_SOURCES = drv_initscripts.c dutil.h dutil.c \
-     dutil_linux.h dutil_linux.c
+WIN32LIB= -liphlpapi
 endif
+DRIVER_SOURCES = drv_linux.c dutil.h dutil.c \
+     dutil_linux.h dutil_linux.c drv_mswindows.c \
+     dutil_mswindows.h
 
 BUILT_SOURCES = datadir.h netcf.syms
 

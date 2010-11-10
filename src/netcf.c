@@ -37,10 +37,9 @@
 #include "internal.h"
 #include "netcf.h"
 #ifdef WIN32
-# include "netcf_win.h"
-# include "dutil_win.h"
+# include "dutil_mswindows.h"
 #else
-# include "dutil.h"
+# include "dutil_linux.h"
 #endif
 
 /* Clear error code and details */
